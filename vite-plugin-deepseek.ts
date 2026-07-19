@@ -1,0 +1,114 @@
+import type { Plugin } from 'vite'
+
+const SYSTEM_PROMPT = `你是一位资深的中西医执业医师考试辅导专家，精通2026年中西医执业医师考试大纲。
+请根据用户输入的疾病名/考点，生成结构化的JSON数据，严格遵循以下要求：
+
+1. 内容准确，符合2026年中西医执业医师考试大纲
+2. coreSymptoms 是4个汉字组成的数组（如["咳","痰","喘","肿"]）
+3. formulaRows 必须有5个证型，每个包含 type、symptom、formula 三个字段
+4. differentialRows 必须有4个鉴别诊断，每个包含 disease、symptom、key 三个字段
+5. treatmentCards 必须有4个治疗要点，每个包含 num、title、desc 三个字段
+6. diagnosisPoints 必须有3条诊断要点
+7. westernTreatment 必须有5条西医治疗原则
+8. compliance 必须有3条（医学准确性、专业术语规范、平台社区公约）
+9. distribution.xiaohongshu 是适合小红书发布的文案（带emoji和话题标签，300-500字）
+10. distribution.wechat 是适合公众号的长文格式（800-1200字，有小标题）
+11. syndromes 必须有5个证型，每个包含 type、formula 两个字段
+12. memoryCard.title 是疾病全称速记卡片
+13. memoryCard.category 是科室·系统分类（如"内科·循环系统"）
+14. memoryInfographic.topicBadge 是"有天同学·医考干货"
+15. memoryInfographic.title 是"26中西医执医技能考点速记图"
+16. memoryInfographic.subtitle 是疾病名（含中医病名/西医病名）
+17. memoryInfographic.footer 是"有天同学的医考干货 ｜ 26中西医技能必背"
+18. distribution.shareLink 是分享链接（设为"https://ythub.work/flow/" + 疾病拼音缩写）
+
+请直接返回JSON，不要有任何额外文字或markdown格式标记。JSON 顶层结构：
+{
+  "memoryCard": { "title": "", "category": "", "definition": "", "etiology": "", "diagnosisPoints": [], "syndromes": [], "westernTreatment": [], "mnemonic": "", "mnemonicExplain": "" },
+  "memoryInfographic": { "topicBadge": "", "title": "", "subtitle": "", "coreSymptoms": [], "diagnosisStandard": "", "formulaRows": [], "formulaMnemonic": "", "formulaMnemonicExplain": "", "differentialRows": [], "treatmentCards": [], "footer": "" },
+  "compliance": [{ "label": "", "description": "" }],
+  "distribution": { "xiaohongshu": "", "wechat": "", "shareLink": "" }
+}`
+
+export function deepseekApiPlugin(apiKey: string): Plugin {
+  return {
+    name: 'deepseek-api-plugin',
+    configureServer(server) {
+      server.middlewares.use('/api/generate', async (req, res) => {
+        if (req.method === 'OPTIONS') {
+          res.setHeader('Access-Control-Allow-Origin', '*')
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+          res.statusCode = 204
+          res.end()
+          return
+        }
+
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Method Not Allowed' }))
+          return
+        }
+
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Content-Type', 'application/json')
+
+        let body = ''
+        req.on('data', (chunk) => { body += chunk })
+        req.on('end', async () => {
+          try {
+            const { topic } = JSON.parse(body)
+            if (!topic?.trim()) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: '缺少 topic 参数' }))
+              return
+            }
+
+            const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model: 'deepseek-chat',
+                messages: [
+                  { role: 'system', content: SYSTEM_PROMPT },
+                  { role: 'user', content: topic },
+                ],
+                temperature: 0.7,
+                response_format: { type: 'json_object' },
+              }),
+            })
+
+            if (!response.ok) {
+              const errorText = await response.text()
+              res.statusCode = response.status
+              res.end(JSON.stringify({ error: `DeepSeek API 错误: ${errorText}` }))
+              return
+            }
+
+            const data = await response.json()
+            const content = data.choices?.[0]?.message?.content
+
+            if (!content) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: 'API 返回内容为空' }))
+              return
+            }
+
+            res.statusCode = 200
+            res.end(content)
+          } catch (err) {
+            res.statusCode = 500
+            res.end(JSON.stringify({
+              error: '服务器内部错误',
+              message: err instanceof Error ? err.message : String(err),
+            }))
+          }
+        })
+      })
+    },
+  }
+}
