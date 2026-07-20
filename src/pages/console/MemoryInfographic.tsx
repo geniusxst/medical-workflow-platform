@@ -1,7 +1,10 @@
 import { forwardRef, useRef, useState } from 'react'
 import { Download, Heart, Loader2, TriangleAlert } from 'lucide-react'
 import { toPng } from 'html-to-image'
-import mascotImg from '@/assets/image_0_yi19x4.jpg'
+import mascotReading from '@/assets/有天同学-读书思考.jpg'
+import mascotNotes from '@/assets/有天同学-记笔记.jpg'
+import mascotCheer from '@/assets/有天同学-欢呼点赞.jpg'
+import mascotWave from '@/assets/有天同学-招手问好.jpg'
 import type { MemoryInfographicData } from '@/types/memory'
 
 interface MemoryInfographicProps {
@@ -119,41 +122,59 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         {exporting ? '导出中…' : '导出图片'}
       </button>
 
-      {/* ========== 右上角 Q版图1（小，logo 装饰）========== */}
+      {/* ========== 右上角 Q版图1：招手问好（logo 装饰）========== */}
       <img
-        src={mascotImg}
-        alt="有天同学"
+        src={mascotWave}
+        alt="有天同学-招手问好"
         aria-hidden
         className="pointer-events-none absolute"
         style={{
           top: '44px',
           right: '14px',
-          width: '64px',
-          height: '64px',
+          width: '72px',
+          height: '72px',
           objectFit: 'cover',
-          borderRadius: '50%',
+          borderRadius: '14px',
           border: '3px solid var(--card)',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          boxShadow: '0 3px 10px rgba(0,0,0,0.15)',
           zIndex: 2,
         }}
       />
 
-      {/* ========== 左下角 Q版图2（小，水平翻转模拟不同姿势）========== */}
+      {/* ========== 左下角 Q版图2：欢呼点赞（底部装饰）========== */}
       <img
-        src={mascotImg}
-        alt="有天同学"
+        src={mascotCheer}
+        alt="有天同学-欢呼点赞"
         aria-hidden
         className="pointer-events-none absolute"
         style={{
-          bottom: '14px',
+          bottom: '12px',
           left: '14px',
-          width: '56px',
-          height: '56px',
+          width: '70px',
+          height: '70px',
           objectFit: 'cover',
-          borderRadius: '50%',
+          borderRadius: '14px',
           border: '3px solid var(--card)',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
-          transform: 'scaleX(-1) rotate(-8deg)',
+          boxShadow: '0 3px 10px rgba(0,0,0,0.12)',
+          zIndex: 2,
+        }}
+      />
+
+      {/* ========== 右下角 Q版图3：记笔记（底部装饰）========== */}
+      <img
+        src={mascotNotes}
+        alt="有天同学-记笔记"
+        aria-hidden
+        className="pointer-events-none absolute"
+        style={{
+          bottom: '12px',
+          right: '14px',
+          width: '64px',
+          height: '64px',
+          objectFit: 'cover',
+          borderRadius: '14px',
+          border: '3px solid var(--card)',
+          boxShadow: '0 3px 10px rgba(0,0,0,0.12)',
           zIndex: 2,
         }}
       />
@@ -190,31 +211,52 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         💊
       </span>
 
-      {/* ========== Header：badge + 标题 + 疾病名超大标题 ========== */}
-      <header className="relative flex flex-col gap-1.5" style={{ zIndex: 1, paddingRight: '76px' }}>
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold w-fit"
-          style={{ color: 'var(--chart-4)', backgroundColor: 'var(--card)' }}
-        >
+      {/* ========== Header：badge + 标题 + 疾病名超大标题 + 读书思考主形象 ========== */}
+      <header
+        className="relative flex items-start justify-between gap-3"
+        style={{ zIndex: 1, paddingRight: '88px' }}
+      >
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <span
-            className="rounded-full"
-            style={{ width: '6px', height: '6px', backgroundColor: 'var(--primary)' }}
-          />
-          {data.topicBadge}
-        </span>
-        <h3
-          className="m-0 leading-[1.2] text-[14px] font-bold"
-          style={{ color: 'var(--chart-4)' }}
-        >
-          {data.title}
-        </h3>
-        {/* 疾病名称超大标题（抓眼球核心）*/}
-        <h2
-          className="m-0 leading-[1.15] text-[28px] font-extrabold tracking-tight"
-          style={{ color: 'var(--foreground)' }}
-        >
-          {data.subtitle}
-        </h2>
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold w-fit"
+            style={{ color: 'var(--chart-4)', backgroundColor: 'var(--card)' }}
+          >
+            <span
+              className="rounded-full"
+              style={{ width: '6px', height: '6px', backgroundColor: 'var(--primary)' }}
+            />
+            {data.topicBadge}
+          </span>
+          <h3
+            className="m-0 leading-[1.2] text-[14px] font-bold"
+            style={{ color: 'var(--chart-4)' }}
+          >
+            {data.title}
+          </h3>
+          {/* 疾病名称超大标题（抓眼球核心）*/}
+          <h2
+            className="m-0 leading-[1.15] text-[28px] font-extrabold tracking-tight"
+            style={{ color: 'var(--foreground)' }}
+          >
+            {data.subtitle}
+          </h2>
+        </div>
+        {/* 读书思考主形象（紧贴标题右侧，与右上角招手问好错开）*/}
+        <img
+          src={mascotReading}
+          alt="有天同学-读书思考"
+          aria-hidden
+          className="pointer-events-none shrink-0"
+          style={{
+            width: '56px',
+            height: '56px',
+            objectFit: 'cover',
+            borderRadius: '12px',
+            border: '2.5px solid var(--card)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            marginTop: '20px',
+          }}
+        />
       </header>
 
       {/* ========== 板块 1：核心症状 + 诊断标准 + 必背标准 ========== */}
@@ -525,13 +567,14 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         </div>
       </div>
 
-      {/* ========== Footer：底部留出左下角 Q版图空间 ========== */}
+      {/* ========== Footer：底部留出左右下角 Q版图空间 ========== */}
       <footer
         className="relative pt-2 text-center"
         style={{
           borderTop: '1px solid color-mix(in srgb, var(--chart-4) 18%, transparent)',
           zIndex: 1,
-          paddingLeft: '68px',
+          paddingLeft: '82px',
+          paddingRight: '76px',
         }}
       >
         <span
