@@ -1,10 +1,10 @@
 import { forwardRef, useRef, useState } from 'react'
 import { Download, Heart, Loader2, TriangleAlert } from 'lucide-react'
 import { toPng } from 'html-to-image'
-import mascotReading from '@/assets/有天同学-读书思考.jpg'
-import mascotNotes from '@/assets/有天同学-记笔记.jpg'
-import mascotCheer from '@/assets/有天同学-欢呼点赞.jpg'
-import mascotWave from '@/assets/有天同学-招手问好.jpg'
+import mascotTeach from '@/assets/有天同学-讲解授课.png'
+import mascotLearn from '@/assets/有天同学-伏案学习.png'
+import mascotIdea from '@/assets/有天同学-灵光一现.png'
+import mascotLike from '@/assets/有天同学-从容点赞.png'
 import type { MemoryInfographicData } from '@/types/memory'
 
 interface MemoryInfographicProps {
@@ -122,59 +122,70 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         {exporting ? '导出中…' : '导出图片'}
       </button>
 
-      {/* ========== 右上角 Q版图1：招手问好（logo 装饰）========== */}
+      {/* ========== 右上角 Q版图1：讲解授课（主形象，最大，无背景 PNG 直接贴）========== */}
       <img
-        src={mascotWave}
-        alt="有天同学-招手问好"
+        src={mascotTeach}
+        alt="有天同学-讲解授课"
         aria-hidden
         className="pointer-events-none absolute"
         style={{
-          top: '44px',
-          right: '14px',
-          width: '72px',
-          height: '72px',
-          objectFit: 'cover',
-          borderRadius: '14px',
-          border: '3px solid var(--card)',
-          boxShadow: '0 3px 10px rgba(0,0,0,0.15)',
+          top: '8px',
+          right: '6px',
+          width: '120px',
+          height: '120px',
+          objectFit: 'contain',
+          filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.18))',
+          zIndex: 3,
+        }}
+      />
+
+      {/* ========== 标题右侧 Q版图2：灵光一现（中尺寸，点子闪现感）========== */}
+      <img
+        src={mascotIdea}
+        alt="有天同学-灵光一现"
+        aria-hidden
+        className="pointer-events-none absolute"
+        style={{
+          top: '128px',
+          right: '10px',
+          width: '78px',
+          height: '78px',
+          objectFit: 'contain',
+          filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.15))',
           zIndex: 2,
         }}
       />
 
-      {/* ========== 左下角 Q版图2：欢呼点赞（底部装饰）========== */}
+      {/* ========== 左下角 Q版图3：伏案学习（中大尺寸，学习场景）========== */}
       <img
-        src={mascotCheer}
-        alt="有天同学-欢呼点赞"
+        src={mascotLearn}
+        alt="有天同学-伏案学习"
         aria-hidden
         className="pointer-events-none absolute"
         style={{
-          bottom: '12px',
-          left: '14px',
+          bottom: '4px',
+          left: '4px',
+          width: '104px',
+          height: '104px',
+          objectFit: 'contain',
+          filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.15))',
+          zIndex: 2,
+        }}
+      />
+
+      {/* ========== 右下角 Q版图4：从容点赞（小尺寸，点睛呼应）========== */}
+      <img
+        src={mascotLike}
+        alt="有天同学-从容点赞"
+        aria-hidden
+        className="pointer-events-none absolute"
+        style={{
+          bottom: '8px',
+          right: '10px',
           width: '70px',
           height: '70px',
-          objectFit: 'cover',
-          borderRadius: '14px',
-          border: '3px solid var(--card)',
-          boxShadow: '0 3px 10px rgba(0,0,0,0.12)',
-          zIndex: 2,
-        }}
-      />
-
-      {/* ========== 右下角 Q版图3：记笔记（底部装饰）========== */}
-      <img
-        src={mascotNotes}
-        alt="有天同学-记笔记"
-        aria-hidden
-        className="pointer-events-none absolute"
-        style={{
-          bottom: '12px',
-          right: '14px',
-          width: '64px',
-          height: '64px',
-          objectFit: 'cover',
-          borderRadius: '14px',
-          border: '3px solid var(--card)',
-          boxShadow: '0 3px 10px rgba(0,0,0,0.12)',
+          objectFit: 'contain',
+          filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.12))',
           zIndex: 2,
         }}
       />
@@ -211,52 +222,34 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         💊
       </span>
 
-      {/* ========== Header：badge + 标题 + 疾病名超大标题 + 读书思考主形象 ========== */}
+      {/* ========== Header：badge + 标题 + 疾病名超大标题 ========== */}
       <header
-        className="relative flex items-start justify-between gap-3"
-        style={{ zIndex: 1, paddingRight: '88px' }}
+        className="relative flex flex-col gap-1.5"
+        style={{ zIndex: 1, paddingRight: '128px' }}
       >
-        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold w-fit"
+          style={{ color: 'var(--chart-4)', backgroundColor: 'var(--card)' }}
+        >
           <span
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold w-fit"
-            style={{ color: 'var(--chart-4)', backgroundColor: 'var(--card)' }}
-          >
-            <span
-              className="rounded-full"
-              style={{ width: '6px', height: '6px', backgroundColor: 'var(--primary)' }}
-            />
-            {data.topicBadge}
-          </span>
-          <h3
-            className="m-0 leading-[1.2] text-[14px] font-bold"
-            style={{ color: 'var(--chart-4)' }}
-          >
-            {data.title}
-          </h3>
-          {/* 疾病名称超大标题（抓眼球核心）*/}
-          <h2
-            className="m-0 leading-[1.15] text-[28px] font-extrabold tracking-tight"
-            style={{ color: 'var(--foreground)' }}
-          >
-            {data.subtitle}
-          </h2>
-        </div>
-        {/* 读书思考主形象（紧贴标题右侧，与右上角招手问好错开）*/}
-        <img
-          src={mascotReading}
-          alt="有天同学-读书思考"
-          aria-hidden
-          className="pointer-events-none shrink-0"
-          style={{
-            width: '56px',
-            height: '56px',
-            objectFit: 'cover',
-            borderRadius: '12px',
-            border: '2.5px solid var(--card)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-            marginTop: '20px',
-          }}
-        />
+            className="rounded-full"
+            style={{ width: '6px', height: '6px', backgroundColor: 'var(--primary)' }}
+          />
+          {data.topicBadge}
+        </span>
+        <h3
+          className="m-0 leading-[1.2] text-[14px] font-bold"
+          style={{ color: 'var(--chart-4)' }}
+        >
+          {data.title}
+        </h3>
+        {/* 疾病名称超大标题（抓眼球核心）*/}
+        <h2
+          className="m-0 leading-[1.15] text-[28px] font-extrabold tracking-tight"
+          style={{ color: 'var(--foreground)' }}
+        >
+          {data.subtitle}
+        </h2>
       </header>
 
       {/* ========== 板块 1：核心症状 + 诊断标准 + 必背标准 ========== */}
@@ -572,9 +565,9 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         className="relative pt-2 text-center"
         style={{
           borderTop: '1px solid color-mix(in srgb, var(--chart-4) 18%, transparent)',
-          zIndex: 1,
-          paddingLeft: '82px',
-          paddingRight: '76px',
+          zIndex: 4,
+          paddingLeft: '116px',
+          paddingRight: '84px',
         }}
       >
         <span
