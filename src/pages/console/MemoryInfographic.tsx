@@ -1,9 +1,8 @@
-import { forwardRef } from 'react'
-import { File, Heart, TriangleAlert } from 'lucide-react'
+import { forwardRef, useState, useCallback } from 'react'
+import { Download, File, Heart, Loader2, TriangleAlert } from 'lucide-react'
+import { toPng } from 'html-to-image'
 import mascotImg from '@/assets/image_0_yi19x4.jpg'
 import type { MemoryInfographicData } from '@/types/memory'
-
-const monoBold = { fontFamily: 'var(--font-mono)', fontWeight: 600 } as const
 
 const decorativeEmojis: Array<{
   emoji: string
@@ -83,6 +82,38 @@ interface MemoryInfographicProps {
 }
 
 const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(function MemoryInfographic({ data, loading }, ref) {
+  const [exporting, setExporting] = useState(false)
+
+  const handleExportImage = useCallback(async () => {
+    if (!ref || typeof ref === 'function') return
+    const node = ref.current
+    if (!node) return
+    setExporting(true)
+    try {
+      const dataUrl = await toPng(node, {
+        pixelRatio: 2,
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        filter: (n) => {
+          if (n instanceof HTMLElement && n.dataset.exportIgnore === 'true') {
+            return false
+          }
+          return true
+        },
+      })
+      const link = document.createElement('a')
+      const safeName = (data.subtitle || '速记图').replace(/[\\/:*?"<>|]/g, '_')
+      link.download = `${safeName}_速记图.png`
+      link.href = dataUrl
+      link.click()
+    } catch (err) {
+      console.error('导出图片失败:', err)
+      window.alert('导出图片失败，请重试或改用截图')
+    } finally {
+      setExporting(false)
+    }
+  }, [ref, data.subtitle])
+
   if (loading) {
     return (
       <section
@@ -122,6 +153,31 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         transition: 'outline 200ms ease',
       }}
     >
+      <button
+        type="button"
+        data-export-ignore="true"
+        onClick={handleExportImage}
+        disabled={exporting}
+        aria-label="导出速记图为图片"
+        className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold"
+        style={{
+          backgroundColor: 'var(--card)',
+          color: 'var(--primary)',
+          border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+          cursor: exporting ? 'wait' : 'pointer',
+          opacity: exporting ? 0.7 : 1,
+          zIndex: 5,
+        }}
+      >
+        {exporting ? (
+          <Loader2 size={14} className="animate-spin" />
+        ) : (
+          <Download size={14} />
+        )}
+        {exporting ? '导出中…' : '导出图片'}
+      </button>
+
       {decorativeEmojis.map((item, idx) => (
         <span
           key={idx}
@@ -254,11 +310,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
             className="m-0 text-[13px] leading-[1.5]"
             style={{ color: 'var(--foreground)' }}
           >
-            必背诊断标准：超声心动图{' '}
-            <span style={{ ...monoBold, color: 'var(--chart-2)' }}>
-              PASP ＞ 35mmHg
-            </span>{' '}
-            ＋ 右心室肥厚扩大
+            必背诊断标准：{data.keyDiagnosisCriteria}
           </p>
         </div>
       </div>

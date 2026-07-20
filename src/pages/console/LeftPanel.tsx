@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Check, CirclePlay, PenLine } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 
-const DEFAULT_TOPIC = '2026中西医执业医师考试笔试，"慢性肺源性心脏病" 执医速记'
+const DEFAULT_TOPIC = '2026中西医执业医师考试笔试，"XXX" 执医速记（XXX 代指某一疾病/考点）'
 
 const quickExamples = ['高血压药物治疗', '心肺复苏流程', '糖尿病诊断', '抗生素使用']
 
@@ -169,7 +169,7 @@ export default function LeftPanel({ onGenerate, loading }: LeftPanelProps) {
         className="m-0 mt-2 text-xs text-center"
         style={{ color: 'var(--muted-foreground)' }}
       >
-        预计耗时 <span style={{ fontFamily: 'var(--font-mono)' }}>20 分钟</span>{' '}
+        预计耗时 <span style={{ fontFamily: 'var(--font-mono)' }}>3-5 分钟</span>{' '}
         · 较人工提效 <span style={{ fontFamily: 'var(--font-mono)' }}>12 倍</span>
       </p>
     </aside>

@@ -13,7 +13,7 @@ export default function ConsolePage() {
   const miRef = useRef<HTMLElement>(null)
 
   const handleGenerate = async (topic: string) => {
-    showToast('AI 正在生成速记内容…预计 20 分钟完成')
+    showToast('AI 正在生成速记内容…预计 3-5 分钟完成')
     miRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     if (miRef.current) {
       miRef.current.style.outline = '2px solid var(--primary)'

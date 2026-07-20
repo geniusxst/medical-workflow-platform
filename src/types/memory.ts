@@ -42,6 +42,7 @@ export interface MemoryInfographicData {
   subtitle: string
   coreSymptoms: string[]
   diagnosisStandard: string
+  keyDiagnosisCriteria: string
   formulaRows: FormulaRow[]
   formulaMnemonic: string
   formulaMnemonicExplain: string

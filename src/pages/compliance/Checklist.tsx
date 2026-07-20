@@ -1,4 +1,4 @@
-import { Check, CircleCheck } from 'lucide-react'
+import { Check } from 'lucide-react'
 
 interface ChecklistCategory {
   dotColor: string
@@ -112,21 +112,6 @@ export default function Checklist() {
             </ul>
           </article>
         ))}
-      </div>
-      <div
-        className="rounded-lg px-4 py-3 flex items-start gap-2"
-        style={{ backgroundColor: 'var(--sidebar)' }}
-      >
-        <CircleCheck
-          className="w-4 h-4 mt-0.5 shrink-0"
-          style={{ color: 'var(--primary)' }}
-        />
-        <p
-          className="text-[13px] leading-relaxed"
-          style={{ color: 'var(--accent-foreground)' }}
-        >
-          对应拼多多合规运营职责：制定和完善商品发布的合规规则 → 建立 3 维合规审查清单，将规则产品化、流程化
-        </p>
       </div>
     </section>
   )

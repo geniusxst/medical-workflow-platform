@@ -34,6 +34,7 @@ export const defaultResult: GeneratedResult = {
     subtitle: '慢性肺源性心脏病（肺胀/慢性肺心病）',
     coreSymptoms: ['咳', '痰', '喘', '肿'],
     diagnosisStandard: '慢性胸肺疾病史 + 肺动脉高压征象（P2＞A2、颈静脉怒张、右心室肥厚）',
+    keyDiagnosisCriteria: '超声心动图 PASP ＞ 35mmHg ＋ 右心室肥厚扩大',
     formulaRows: [
       { type: '痰浊壅肺证', symptom: '咳痰量多+胸闷', formula: '苏子降气汤', alt: false },
       { type: '痰热郁肺证', symptom: '黄痰黏稠+发热', formula: '越婢加半夏汤', alt: true },

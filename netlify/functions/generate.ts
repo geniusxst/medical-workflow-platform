@@ -44,11 +44,13 @@ const SYSTEM_PROMPT = `你是一位资深的中西医执业医师考试辅导专
 16. memoryInfographic.subtitle 是疾病名（含中医病名/西医病名）
 17. memoryInfographic.footer 是"有天同学的医考干货 ｜ 26中西医技能必背"
 18. distribution.shareLink 是分享链接（设为"https://ythub.work/flow/" + 疾病拼音缩写）
+19. memoryInfographic.diagnosisStandard 是该疾病的诊断标准概述（必须随疾病改变）
+20. memoryInfographic.keyDiagnosisCriteria 是该疾病最具特异性、最必背的诊断标准（必须随疾病改变，是关键指标/阈值/体征，例如：肺心病填"超声心动图 PASP ＞ 35mmHg ＋ 右心室肥厚扩大"；糖尿病填"空腹血糖 ≥ 7.0mmol/L 或 OGTT 2h血糖 ≥ 11.1mmol/L"；高血压填"非同日3次诊室血压 ≥ 140/90mmHg"）
 
 请直接返回JSON，不要有任何额外文字或markdown格式标记。JSON 顶层结构：
 {
   "memoryCard": { "title": "", "category": "", "definition": "", "etiology": "", "diagnosisPoints": [], "syndromes": [], "westernTreatment": [], "mnemonic": "", "mnemonicExplain": "" },
-  "memoryInfographic": { "topicBadge": "", "title": "", "subtitle": "", "coreSymptoms": [], "diagnosisStandard": "", "formulaRows": [], "formulaMnemonic": "", "formulaMnemonicExplain": "", "differentialRows": [], "treatmentCards": [], "footer": "" },
+  "memoryInfographic": { "topicBadge": "", "title": "", "subtitle": "", "coreSymptoms": [], "diagnosisStandard": "", "keyDiagnosisCriteria": "", "formulaRows": [], "formulaMnemonic": "", "formulaMnemonicExplain": "", "differentialRows": [], "treatmentCards": [], "footer": "" },
   "compliance": [{ "label": "", "description": "" }],
   "distribution": { "xiaohongshu": "", "wechat": "", "shareLink": "" }
 }`
