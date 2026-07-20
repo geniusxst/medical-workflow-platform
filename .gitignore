@@ -37,4 +37,7 @@ secrets/
 # 临时部署脚本
 deploy.py
 deploy-with-functions.py
+deploy-final.py
 deploy-netlify.*
+set-env.py
+set-env.*
