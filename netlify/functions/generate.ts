@@ -58,12 +58,57 @@ const SYSTEM_PROMPT = `你是一位资深的中西医执业医师考试辅导专
 16. memoryInfographic.diagnosisStandard 是该疾病的诊断标准概述（必须随疾病改变）
 17. memoryInfographic.keyDiagnosisCriteria 是该疾病最具特异性、最必背的诊断标准（必须随疾病改变，是关键指标/阈值/体征，例如：肺心病填"超声心动图 PASP ＞ 35mmHg ＋ 右心室肥厚扩大"；糖尿病填"空腹血糖 ≥ 7.0mmol/L 或 OGTT 2h血糖 ≥ 11.1mmol/L"；高血压填"非同日3次诊室血压 ≥ 140/90mmHg"）
 
-请直接返回JSON，不要有任何额外文字或markdown格式标记。JSON 顶层结构：
+请直接返回JSON，不要有任何额外文字或markdown格式标记。
+
+【极其重要】所有数组元素必须是"对象"或"字符串"按下方示例的结构，绝对不能把对象数组退化成字符串数组。具体要求：
+- syndromes、formulaRows、differentialRows、treatmentCards、compliance 必须是「对象数组」，每个元素都是带固定字段的对象（绝不能只写证型名字符串）
+- diagnosisPoints、westernTreatment、coreSymptoms 必须是「字符串数组」，每个元素都是字符串
+
+JSON 顶层结构示例（必须严格按此字段结构填充）：
 {
-  "memoryCard": { "title": "", "category": "", "definition": "", "etiology": "", "diagnosisPoints": [], "syndromes": [], "westernTreatment": [], "mnemonic": "", "mnemonicExplain": "" },
-  "memoryInfographic": { "topicBadge": "", "title": "", "subtitle": "", "coreSymptoms": [], "diagnosisStandard": "", "keyDiagnosisCriteria": "", "formulaRows": [], "formulaMnemonic": "", "formulaMnemonicExplain": "", "differentialRows": [], "treatmentCards": [], "footer": "" },
-  "compliance": [{ "label": "", "description": "" }],
-  "distribution": { "xiaohongshu": "", "wechat": "", "shareLink": "" }
+  "memoryCard": {
+    "title": "肝硬化速记卡片",
+    "category": "内科·消化系统",
+    "definition": "...",
+    "etiology": "...",
+    "diagnosisPoints": ["要点1", "要点2", "要点3"],
+    "syndromes": [
+      {"type": "气滞湿阻证", "formula": "柴胡疏肝散合胃苓汤", "alt": false},
+      {"type": "寒湿困脾证", "formula": "实脾饮", "alt": true}
+    ],
+    "westernTreatment": ["治疗1", "治疗2", "治疗3", "治疗4", "治疗5"],
+    "mnemonic": "...",
+    "mnemonicExplain": "..."
+  },
+  "memoryInfographic": {
+    "topicBadge": "有天同学 · 医考干货",
+    "title": "26中西医执医技能考点速记图",
+    "subtitle": "肝硬化（鼓胀）",
+    "coreSymptoms": ["鼓", "胀", "腹", "水"],
+    "diagnosisStandard": "...",
+    "keyDiagnosisCriteria": "...",
+    "formulaRows": [
+      {"type": "气滞湿阻证", "symptom": "腹胀按之不坚+胁胀痛", "formula": "柴胡疏肝散合胃苓汤", "alt": false},
+      {"type": "寒湿困脾证", "symptom": "腹大胀满+得热则缓", "formula": "实脾饮", "alt": true}
+    ],
+    "formulaMnemonic": "...",
+    "formulaMnemonicExplain": "...",
+    "differentialRows": [
+      {"disease": "肝硬化", "symptom": "...", "key": "...", "alt": false},
+      {"disease": "结核性腹膜炎", "symptom": "...", "key": "...", "alt": true}
+    ],
+    "treatmentCards": [
+      {"num": "1", "title": "一般治疗", "desc": "休息+营养支持"},
+      {"num": "2", "title": "病因治疗", "desc": "..."}
+    ],
+    "footer": "有天同学的医考干货 ｜ 26中西医技能必背"
+  },
+  "compliance": [
+    {"label": "医学准确性", "description": "..."},
+    {"label": "专业术语规范", "description": "..."},
+    {"label": "平台社区公约", "description": "..."}
+  ],
+  "distribution": {"xiaohongshu": "...", "wechat": "...", "shareLink": "https://ythub.work/flow/gzh"}
 }
 
 【考试资料知识库】

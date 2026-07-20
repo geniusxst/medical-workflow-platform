@@ -88,16 +88,16 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
       id="memory-infographic"
       className="relative overflow-hidden"
       style={{
-        // 3:4 竖屏比例（1080×1440 标准小红书/公众号贴图比例）
+        // 高度由内容撑开（短内容至少保持 3:4 视觉比例，长内容自动加长，绝不裁剪）
         width: '100%',
-        aspectRatio: '3 / 4',
+        minHeight: '560px',
         background:
           'linear-gradient(170deg, color-mix(in srgb, var(--sidebar) 88%, var(--card)) 0%, color-mix(in srgb, var(--accent) 82%, var(--card)) 100%)',
         borderRadius: '12px',
-        padding: '20px 22px',
+        padding: '18px 20px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '10px',
+        gap: '8px',
       }}
     >
       {/* ========== 导出按钮（导出时自动排除）========== */}
@@ -139,22 +139,8 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         }}
       />
 
-      {/* ========== 标题右侧 Q版图2：灵光一现（中尺寸，点子闪现感）========== */}
-      <img
-        src={mascotIdea}
-        alt="有天同学-灵光一现"
-        aria-hidden
-        className="pointer-events-none absolute"
-        style={{
-          top: '128px',
-          right: '10px',
-          width: '78px',
-          height: '78px',
-          objectFit: 'contain',
-          filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.15))',
-          zIndex: 2,
-        }}
-      />
+      {/* ========== Q版图2：灵光一现 ========== */}
+      {/* 已挪到底部 Footer 区域，避免与板块 1（核心症状）内容互相遮挡 */}
 
       {/* ========== 左下角 Q版图3：伏案学习（中大尺寸，学习场景）========== */}
       {/* 注意：这张图改为由 Footer 用 flex 布局容纳，避免 absolute 与文字重叠 */}
@@ -534,9 +520,9 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         </div>
       </div>
 
-      {/* ========== Footer：用 flex 容纳左右两张 Q版图，文字居中，互不遮挡 ========== */}
+      {/* ========== Footer：用 flex 容纳 3 张 Q版图，文字居中，互不遮挡 ========== */}
       <footer
-        className="relative pt-2 flex items-center justify-between gap-3"
+        className="relative pt-2 flex items-center justify-between gap-2"
         style={{
           borderTop: '1px solid color-mix(in srgb, var(--chart-4) 18%, transparent)',
           zIndex: 4,
@@ -549,12 +535,26 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
           aria-hidden
           className="pointer-events-none shrink-0"
           style={{
-            width: '88px',
-            height: '88px',
+            width: '84px',
+            height: '84px',
             objectFit: 'contain',
             filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.15))',
-            marginTop: '-28px',
-            marginLeft: '-6px',
+            marginTop: '-24px',
+            marginLeft: '-4px',
+          }}
+        />
+        {/* 中间偏左：灵光一现（小尺寸，重新安置，避免与板块 1 重叠）*/}
+        <img
+          src={mascotIdea}
+          alt="有天同学-灵光一现"
+          aria-hidden
+          className="pointer-events-none shrink-0"
+          style={{
+            width: '52px',
+            height: '52px',
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.12))',
+            marginTop: '-12px',
           }}
         />
         {/* 中间文字 */}
