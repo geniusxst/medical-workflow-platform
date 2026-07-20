@@ -157,38 +157,12 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
       />
 
       {/* ========== 左下角 Q版图3：伏案学习（中大尺寸，学习场景）========== */}
-      <img
-        src={mascotLearn}
-        alt="有天同学-伏案学习"
-        aria-hidden
-        className="pointer-events-none absolute"
-        style={{
-          bottom: '4px',
-          left: '4px',
-          width: '104px',
-          height: '104px',
-          objectFit: 'contain',
-          filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.15))',
-          zIndex: 2,
-        }}
-      />
+      {/* 注意：这张图改为由 Footer 用 flex 布局容纳，避免 absolute 与文字重叠 */}
+      {/* 见下方 Footer */}
 
       {/* ========== 右下角 Q版图4：从容点赞（小尺寸，点睛呼应）========== */}
-      <img
-        src={mascotLike}
-        alt="有天同学-从容点赞"
-        aria-hidden
-        className="pointer-events-none absolute"
-        style={{
-          bottom: '8px',
-          right: '10px',
-          width: '70px',
-          height: '70px',
-          objectFit: 'contain',
-          filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.12))',
-          zIndex: 2,
-        }}
-      />
+      {/* 注意：这张图改为由 Footer 用 flex 布局容纳，避免 absolute 与文字重叠 */}
+      {/* 见下方 Footer */}
 
       {/* ========== 装饰背景 emoji（不遮挡内容）========== */}
       <span
@@ -560,23 +534,54 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         </div>
       </div>
 
-      {/* ========== Footer：底部留出左右下角 Q版图空间 ========== */}
+      {/* ========== Footer：用 flex 容纳左右两张 Q版图，文字居中，互不遮挡 ========== */}
       <footer
-        className="relative pt-2 text-center"
+        className="relative pt-2 flex items-center justify-between gap-3"
         style={{
           borderTop: '1px solid color-mix(in srgb, var(--chart-4) 18%, transparent)',
           zIndex: 4,
-          paddingLeft: '116px',
-          paddingRight: '84px',
         }}
       >
+        {/* 左下角：伏案学习（中大尺寸）*/}
+        <img
+          src={mascotLearn}
+          alt="有天同学-伏案学习"
+          aria-hidden
+          className="pointer-events-none shrink-0"
+          style={{
+            width: '88px',
+            height: '88px',
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.15))',
+            marginTop: '-28px',
+            marginLeft: '-6px',
+          }}
+        />
+        {/* 中间文字 */}
         <span
-          className="inline-flex items-center gap-1.5 text-[12px] font-semibold"
+          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-center flex-1 min-w-0"
           style={{ color: 'var(--chart-4)' }}
         >
-          <Heart size={12} style={{ color: 'var(--chart-2)' }} />
-          {data.footer}
+          <Heart size={12} style={{ color: 'var(--chart-2)', flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {data.footer}
+          </span>
         </span>
+        {/* 右下角：从容点赞（小尺寸）*/}
+        <img
+          src={mascotLike}
+          alt="有天同学-从容点赞"
+          aria-hidden
+          className="pointer-events-none shrink-0"
+          style={{
+            width: '60px',
+            height: '60px',
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.12))',
+            marginTop: '-16px',
+            marginRight: '-4px',
+          }}
+        />
       </footer>
     </section>
   )
