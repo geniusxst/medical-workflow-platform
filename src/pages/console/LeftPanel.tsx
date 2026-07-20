@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Check, CirclePlay, PenLine } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 
-const DEFAULT_TOPIC = '2026中西医执业医师考试笔试，"XXX" 执医速记（XXX 代指某一疾病/考点）'
+const DEFAULT_TOPIC = '2026中西医执业医师考试笔试，"XXX" 执医速记'
 
 const quickExamples = ['高血压药物治疗', '心肺复苏流程', '糖尿病诊断', '抗生素使用']
 

@@ -1,9 +1,15 @@
-import { forwardRef, useState, useCallback } from 'react'
-import { Download, File, Heart, Loader2, TriangleAlert } from 'lucide-react'
+import { forwardRef, useRef, useState } from 'react'
+import { Download, Heart, Loader2, TriangleAlert } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import mascotImg from '@/assets/image_0_yi19x4.jpg'
 import type { MemoryInfographicData } from '@/types/memory'
 
+interface MemoryInfographicProps {
+  data: MemoryInfographicData
+  loading?: boolean
+}
+
+// 4:3 比例的装饰 emoji（小红书/公众号贴图标准比例）
 const decorativeEmojis: Array<{
   emoji: string
   style: React.CSSProperties
@@ -12,10 +18,10 @@ const decorativeEmojis: Array<{
     emoji: '🩺',
     style: {
       position: 'absolute',
-      top: '-8px',
-      left: '-4px',
-      fontSize: '64px',
-      opacity: 0.08,
+      top: '-10px',
+      left: '-6px',
+      fontSize: '72px',
+      opacity: 0.1,
       transform: 'rotate(-15deg)',
     },
   },
@@ -23,31 +29,20 @@ const decorativeEmojis: Array<{
     emoji: '💊',
     style: {
       position: 'absolute',
-      top: '120px',
-      right: '20px',
-      fontSize: '40px',
+      top: '40%',
+      right: '-8px',
+      fontSize: '48px',
       opacity: 0.1,
       transform: 'rotate(20deg)',
-    },
-  },
-  {
-    emoji: '🫁',
-    style: {
-      position: 'absolute',
-      top: '280px',
-      left: '-6px',
-      fontSize: '56px',
-      opacity: 0.08,
-      transform: 'rotate(10deg)',
     },
   },
   {
     emoji: '❤️',
     style: {
       position: 'absolute',
-      bottom: '80px',
-      right: '-4px',
-      fontSize: '48px',
+      bottom: '60px',
+      left: '-6px',
+      fontSize: '52px',
       opacity: 0.1,
       transform: 'rotate(-10deg)',
     },
@@ -56,35 +51,25 @@ const decorativeEmojis: Array<{
     emoji: '💉',
     style: {
       position: 'absolute',
-      bottom: '40px',
-      left: '30px',
-      fontSize: '44px',
-      opacity: 0.09,
-      transform: 'rotate(25deg)',
-    },
-  },
-  {
-    emoji: '🌡️',
-    style: {
-      position: 'absolute',
-      top: '360px',
+      bottom: '-8px',
       right: '40px',
-      fontSize: '36px',
-      opacity: 0.08,
-      transform: 'rotate(-20deg)',
+      fontSize: '50px',
+      opacity: 0.1,
+      transform: 'rotate(25deg)',
     },
   },
 ]
 
-interface MemoryInfographicProps {
-  data: MemoryInfographicData
-  loading?: boolean
-}
-
-const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(function MemoryInfographic({ data, loading }, ref) {
+const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(function MemoryInfographic(
+  { data, loading },
+  ref,
+) {
   const [exporting, setExporting] = useState(false)
+  // 用 ref 跟踪最新的 data，确保导出时拿到的是当前疾病的数据（而非闭包旧值）
+  const dataRef = useRef(data)
+  dataRef.current = data
 
-  const handleExportImage = useCallback(async () => {
+  const handleExportImage = async () => {
     if (!ref || typeof ref === 'function') return
     const node = ref.current
     if (!node) return
@@ -102,7 +87,15 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         },
       })
       const link = document.createElement('a')
-      const safeName = (data.subtitle || '速记图').replace(/[\\/:*?"<>|]/g, '_')
+      // 从 ref 拿最新数据，确保文件名跟当前疾病一致
+      const current = dataRef.current
+      const rawName = current.subtitle || current.title || '速记图'
+      // 去掉括号内外的特殊字符，保留中文/英文/数字
+      const safeName = rawName
+        .replace(/[\\/:*?"<>|（）()]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '')
+        .slice(0, 40) || '速记图'
       link.download = `${safeName}_速记图.png`
       link.href = dataUrl
       link.click()
@@ -112,7 +105,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
     } finally {
       setExporting(false)
     }
-  }, [ref, data.subtitle])
+  }
 
   if (loading) {
     return (
@@ -146,13 +139,20 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
       id="memory-infographic"
       className="relative overflow-hidden"
       style={{
+        // 4:3 比例（小红书/公众号贴图标准），宽度 100%，高度自适应
+        width: '100%',
+        aspectRatio: '4 / 3',
         background:
           'linear-gradient(165deg, color-mix(in srgb, var(--sidebar) 88%, var(--card)) 0%, color-mix(in srgb, var(--accent) 82%, var(--card)) 100%)',
         borderRadius: '12px',
-        padding: '24px',
+        padding: '18px 20px',
         transition: 'outline 200ms ease',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
       }}
     >
+      {/* 导出按钮（导出时自动排除） */}
       <button
         type="button"
         data-export-ignore="true"
@@ -170,14 +170,11 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
           zIndex: 5,
         }}
       >
-        {exporting ? (
-          <Loader2 size={14} className="animate-spin" />
-        ) : (
-          <Download size={14} />
-        )}
+        {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
         {exporting ? '导出中…' : '导出图片'}
       </button>
 
+      {/* 装饰 emoji */}
       {decorativeEmojis.map((item, idx) => (
         <span
           key={idx}
@@ -193,13 +190,14 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         </span>
       ))}
 
-      <div
-        className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"
-        style={{ position: 'relative', zIndex: 1 }}
+      {/* ========== 顶部 Header：badge + 大标题 + 卡通人物（多个） ========== */}
+      <header
+        className="relative flex items-start justify-between gap-3"
+        style={{ zIndex: 1 }}
       >
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <span
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold w-fit"
             style={{
               color: 'var(--chart-4)',
               backgroundColor: 'var(--card)',
@@ -207,431 +205,379 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
           >
             <span
               className="rounded-full"
-              style={{
-                width: '6px',
-                height: '6px',
-                backgroundColor: 'var(--primary)',
-              }}
+              style={{ width: '6px', height: '6px', backgroundColor: 'var(--primary)' }}
             />
             {data.topicBadge}
           </span>
           <h3
-            className="m-0 mt-2 leading-[1.3] text-[20px] font-bold"
+            className="m-0 leading-[1.2] text-[15px] font-bold"
             style={{ color: 'var(--chart-4)' }}
           >
             {data.title}
           </h3>
-          <span
-            className="inline-block mt-2 rounded-full px-3.5 py-[5px] text-[13px] font-semibold"
+          {/* 疾病名称超大标题（抓眼球核心） */}
+          <h2
+            className="m-0 leading-[1.15] text-[30px] font-extrabold tracking-tight"
             style={{
-              backgroundColor: 'var(--chart-4)',
-              color: 'var(--primary-foreground)',
+              color: 'var(--foreground)',
+              textShadow: '0 1px 2px rgba(0,0,0,0.04)',
             }}
           >
             {data.subtitle}
-          </span>
+          </h2>
         </div>
-        <img
-          src={mascotImg}
-          alt="有天同学吉祥物"
-          className="shrink-0 w-[96px] h-[96px] sm:w-[140px] sm:h-[140px] self-start sm:self-auto"
-          style={{
-            objectFit: 'cover',
-            borderRadius: '12px',
-            border: '3px solid var(--card)',
-            boxShadow: '0 0 0 1px color-mix(in srgb, var(--primary) 25%, transparent)',
-          }}
-        />
-      </div>
-
-      <div
-        className="mt-4 rounded-[10px] p-4"
-        style={{
-          backgroundColor: 'var(--card)',
-          borderLeft: '5px solid var(--chart-1)',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <span
-            className="inline-block text-xs font-bold rounded-md px-2.5 py-1"
+        {/* 卡通人物：一张大图 + 一张小图装饰（多个、多个动作感） */}
+        <div className="relative shrink-0" style={{ width: '108px', height: '108px' }}>
+          <img
+            src={mascotImg}
+            alt="有天同学吉祥物"
+            className="absolute top-0 left-0"
             style={{
-              color: 'var(--primary-foreground)',
-              backgroundColor: 'var(--chart-1)',
-            }}
-          >
-            核心症状
-          </span>
-          <span aria-hidden className="text-base" style={{ lineHeight: '1' }}>
-            🩺
-          </span>
-        </div>
-        <div className="flex gap-3 mt-3">
-          {data.coreSymptoms.map((char) => (
-            <span
-              key={char}
-              className="inline-flex items-center justify-center shrink-0 rounded-full text-[18px] font-bold"
-              style={{
-                width: '52px',
-                height: '52px',
-                backgroundColor:
-                  'color-mix(in srgb, var(--chart-1) 14%, var(--card))',
-                color: 'var(--chart-4)',
-                border: '1px solid color-mix(in srgb, var(--chart-1) 30%, transparent)',
-              }}
-            >
-              {char}
-            </span>
-          ))}
-        </div>
-        <p
-          className="m-0 mt-3 text-[13px] leading-[1.7]"
-          style={{ color: 'var(--secondary-foreground)' }}
-        >
-          {data.diagnosisStandard}
-        </p>
-        <div
-          className="mt-2.5 rounded-md px-3.5 py-2.5 flex items-start gap-2"
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--chart-2) 12%, var(--card))',
-            borderLeft: '4px solid var(--chart-2)',
-          }}
-        >
-          <TriangleAlert
-            size={14}
-            style={{
-              color: 'var(--chart-2)',
-              flexShrink: 0,
-              marginTop: '2px',
+              width: '88px',
+              height: '88px',
+              objectFit: 'cover',
+              borderRadius: '12px',
+              border: '3px solid var(--card)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+              zIndex: 2,
             }}
           />
-          <p
-            className="m-0 text-[13px] leading-[1.5]"
-            style={{ color: 'var(--foreground)' }}
-          >
-            必背诊断标准：{data.keyDiagnosisCriteria}
-          </p>
-        </div>
-      </div>
-
-      <div
-        className="mt-3.5 rounded-[10px] p-4"
-        style={{
-          backgroundColor: 'var(--card)',
-          borderLeft: '5px solid var(--chart-5)',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <span
-            className="inline-block text-xs font-bold rounded-md px-2.5 py-1"
+          <img
+            src={mascotImg}
+            alt="有天同学吉祥物装饰"
+            aria-hidden
+            className="absolute bottom-0 right-0"
             style={{
-              color: 'var(--primary-foreground)',
-              backgroundColor: 'var(--chart-5)',
+              width: '52px',
+              height: '52px',
+              objectFit: 'cover',
+              borderRadius: '10px',
+              border: '2px solid var(--card)',
+              opacity: 0.85,
+              transform: 'rotate(8deg)',
+              zIndex: 1,
             }}
-          >
-            辨证选方·必背
-          </span>
-          <span aria-hidden className="text-base" style={{ lineHeight: '1' }}>
-            🌿
-          </span>
+          />
         </div>
-        <table
-          className="w-full text-xs border-collapse mt-3"
-          style={{
-            backgroundColor: 'var(--card)',
-            borderRadius: '8px',
-            overflow: 'hidden',
-          }}
-        >
-          <thead>
-            <tr style={{ backgroundColor: 'var(--sidebar)' }}>
-              <th
-                className="text-left px-3 py-[9px] font-bold whitespace-nowrap"
-                style={{
-                  color: 'var(--chart-4)',
-                  borderBottom: '1px solid var(--border)',
-                  width: '30%',
-                }}
-              >
-                证型
-              </th>
-              <th
-                className="text-left px-3 py-[9px] font-bold whitespace-nowrap"
-                style={{
-                  color: 'var(--chart-4)',
-                  borderBottom: '1px solid var(--border)',
-                }}
-              >
-                抓主症
-              </th>
-              <th
-                className="text-left px-3 py-[9px] font-bold whitespace-nowrap"
-                style={{
-                  color: 'var(--chart-4)',
-                  borderBottom: '1px solid var(--border)',
-                }}
-              >
-                对应方剂
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.formulaRows.map((row, idx) => (
-              <tr
-                key={row.type}
-                style={{
-                  backgroundColor: row.alt
-                    ? 'color-mix(in srgb, var(--sidebar) 50%, var(--card))'
-                    : undefined,
-                }}
-              >
-                <td
-                  className="px-3 py-[9px]"
-                  style={{
-                    color: 'var(--foreground)',
-                    borderBottom:
-                      idx < data.formulaRows.length - 1
-                        ? '1px solid color-mix(in srgb, var(--border) 70%, transparent)'
-                        : undefined,
-                  }}
-                >
-                  {row.type}
-                </td>
-                <td
-                  className="px-3 py-[9px]"
-                  style={{
-                    color: 'var(--secondary-foreground)',
-                    borderBottom:
-                      idx < data.formulaRows.length - 1
-                        ? '1px solid color-mix(in srgb, var(--border) 70%, transparent)'
-                        : undefined,
-                  }}
-                >
-                  {row.symptom}
-                </td>
-                <td
-                  className="px-3 py-[9px] font-semibold"
-                  style={{
-                    color: 'var(--chart-4)',
-                    borderBottom:
-                      idx < data.formulaRows.length - 1
-                        ? '1px solid color-mix(in srgb, var(--border) 70%, transparent)'
-                        : undefined,
-                  }}
-                >
-                  {row.formula}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      </header>
+
+      {/* ========== 中部主体：2 列布局 ========== */}
+      <div
+        className="relative grid gap-2.5 flex-1 min-h-0"
+        style={{ gridTemplateColumns: '1fr 1fr', zIndex: 1 }}
+      >
+        {/* ===== 左列：核心症状 + 诊断标准 + 必背标准 ===== */}
         <div
-          className="mt-3 rounded-md px-3.5 py-3"
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--chart-2) 12%, var(--card))',
-            borderLeft: '4px solid var(--chart-2)',
-          }}
-        >
-          <p
-            className="m-0 text-[13px] font-bold leading-[1.5]"
-            style={{ color: 'var(--chart-2)' }}
-          >
-            口诀：{data.formulaMnemonic}
-          </p>
-          <p
-            className="mt-1 m-0 text-xs leading-[1.5]"
-            style={{ color: 'var(--muted-foreground)' }}
-          >
-            {data.formulaMnemonicExplain}
-          </p>
-        </div>
-      </div>
-
-      <div
-        className="mt-3.5 rounded-[10px] p-4"
-        style={{
-          backgroundColor: 'var(--card)',
-          borderLeft: '5px solid var(--chart-3)',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <span
-            className="inline-block text-xs font-bold rounded-md px-2.5 py-1"
-            style={{
-              color: 'var(--chart-4)',
-              backgroundColor: 'var(--chart-3)',
-            }}
-          >
-            鉴别诊断
-          </span>
-          <File size={16} style={{ color: 'var(--chart-3)' }} />
-        </div>
-        <table
-          className="w-full text-xs border-collapse mt-3"
+          className="rounded-[10px] p-3 flex flex-col gap-2"
           style={{
             backgroundColor: 'var(--card)',
-            borderRadius: '8px',
-            overflow: 'hidden',
+            borderLeft: '5px solid var(--chart-1)',
           }}
         >
-          <thead>
-            <tr style={{ backgroundColor: 'var(--sidebar)' }}>
-              <th
-                className="text-left px-3 py-[9px] font-bold whitespace-nowrap"
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className="inline-block text-[12px] font-bold rounded-md px-2 py-0.5"
+              style={{ color: 'var(--primary-foreground)', backgroundColor: 'var(--chart-1)' }}
+            >
+              核心症状
+            </span>
+            <span aria-hidden className="text-[16px]" style={{ lineHeight: '1' }}>
+              🩺
+            </span>
+          </div>
+          <div className="flex gap-2">
+            {data.coreSymptoms.map((char) => (
+              <span
+                key={char}
+                className="inline-flex items-center justify-center shrink-0 rounded-full text-[20px] font-bold"
                 style={{
+                  width: '48px',
+                  height: '48px',
+                  backgroundColor: 'color-mix(in srgb, var(--chart-1) 14%, var(--card))',
                   color: 'var(--chart-4)',
-                  borderBottom: '1px solid var(--border)',
-                  width: '26%',
+                  border: '1px solid color-mix(in srgb, var(--chart-1) 30%, transparent)',
                 }}
               >
-                疾病
-              </th>
-              <th
-                className="text-left px-3 py-[9px] font-bold whitespace-nowrap"
-                style={{
-                  color: 'var(--chart-4)',
-                  borderBottom: '1px solid var(--border)',
-                }}
-              >
-                症状特征
-              </th>
-              <th
-                className="text-left px-3 py-[9px] font-bold whitespace-nowrap"
-                style={{
-                  color: 'var(--chart-4)',
-                  borderBottom: '1px solid var(--border)',
-                }}
-              >
-                关键鉴别点
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.differentialRows.map((row, idx) => (
-              <tr
-                key={row.disease}
-                style={{
-                  backgroundColor: row.alt
-                    ? 'color-mix(in srgb, var(--sidebar) 50%, var(--card))'
-                    : undefined,
-                }}
-              >
-                <td
-                  className="px-3 py-[9px] font-semibold"
-                  style={{
-                    color: 'var(--foreground)',
-                    borderBottom:
-                      idx < data.differentialRows.length - 1
-                        ? '1px solid color-mix(in srgb, var(--border) 70%, transparent)'
-                        : undefined,
-                  }}
-                >
-                  {row.disease}
-                </td>
-                <td
-                  className="px-3 py-[9px]"
-                  style={{
-                    color: 'var(--secondary-foreground)',
-                    borderBottom:
-                      idx < data.differentialRows.length - 1
-                        ? '1px solid color-mix(in srgb, var(--border) 70%, transparent)'
-                        : undefined,
-                  }}
-                >
-                  {row.symptom}
-                </td>
-                <td
-                  className="px-3 py-[9px]"
-                  style={{
-                    color: 'var(--secondary-foreground)',
-                    borderBottom:
-                      idx < data.differentialRows.length - 1
-                        ? '1px solid color-mix(in srgb, var(--border) 70%, transparent)'
-                        : undefined,
-                  }}
-                >
-                  {row.key}
-                </td>
-              </tr>
+                {char}
+              </span>
             ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div
-        className="mt-3.5 rounded-[10px] p-4"
-        style={{
-          backgroundColor: 'var(--card)',
-          borderLeft: '5px solid var(--chart-4)',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <span
-            className="inline-block text-xs font-bold rounded-md px-2.5 py-1"
+          </div>
+          <p
+            className="m-0 text-[13px] leading-[1.55]"
+            style={{ color: 'var(--secondary-foreground)' }}
+          >
+            {data.diagnosisStandard}
+          </p>
+          <div
+            className="mt-auto rounded-md px-2.5 py-2 flex items-start gap-1.5"
             style={{
-              color: 'var(--primary-foreground)',
-              backgroundColor: 'var(--chart-4)',
+              backgroundColor: 'color-mix(in srgb, var(--chart-2) 12%, var(--card))',
+              borderLeft: '4px solid var(--chart-2)',
             }}
           >
-            西医治疗速记
-          </span>
-          <span aria-hidden className="text-base" style={{ lineHeight: '1' }}>
-            💊
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-3 mt-3">
-          {data.treatmentCards.map((card) => (
-            <div
-              key={card.num}
-              className="rounded-lg p-3"
-              style={{
-                backgroundColor: 'var(--card)',
-                border: '1px solid color-mix(in srgb, var(--chart-4) 20%, transparent)',
-              }}
+            <TriangleAlert
+              size={14}
+              style={{ color: 'var(--chart-2)', flexShrink: 0, marginTop: '2px' }}
+            />
+            <p
+              className="m-0 text-[13px] leading-[1.5] font-semibold"
+              style={{ color: 'var(--foreground)' }}
             >
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-flex items-center justify-center shrink-0 rounded-full text-[13px] font-bold"
+              必背诊断标准：{data.keyDiagnosisCriteria}
+            </p>
+          </div>
+        </div>
+
+        {/* ===== 右列：辨证选方表 + 口诀 ===== */}
+        <div
+          className="rounded-[10px] p-3 flex flex-col gap-2"
+          style={{
+            backgroundColor: 'var(--card)',
+            borderLeft: '5px solid var(--chart-5)',
+          }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className="inline-block text-[12px] font-bold rounded-md px-2 py-0.5"
+              style={{ color: 'var(--chart-4)', backgroundColor: 'var(--chart-5)' }}
+            >
+              辨证选方·必背
+            </span>
+            <span aria-hidden className="text-[16px]" style={{ lineHeight: '1' }}>
+              🌿
+            </span>
+          </div>
+          <table
+            className="w-full text-[12px] border-collapse"
+            style={{ backgroundColor: 'var(--card)' }}
+          >
+            <thead>
+              <tr style={{ backgroundColor: 'var(--sidebar)' }}>
+                <th
+                  className="text-left px-2 py-1 font-bold whitespace-nowrap"
+                  style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '30%' }}
+                >
+                  证型
+                </th>
+                <th
+                  className="text-left px-2 py-1 font-bold whitespace-nowrap"
+                  style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)' }}
+                >
+                  方剂
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.formulaRows.map((row, idx) => (
+                <tr
+                  key={row.type}
                   style={{
-                    width: '28px',
-                    height: '28px',
-                    backgroundColor: 'var(--chart-5)',
-                    color: 'var(--primary-foreground)',
-                    fontFamily: 'var(--font-mono)',
+                    backgroundColor: row.alt
+                      ? 'color-mix(in srgb, var(--sidebar) 50%, var(--card))'
+                      : undefined,
                   }}
                 >
-                  {card.num}
-                </span>
-                <span
-                  className="text-[13px] font-semibold"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  {card.title}
-                </span>
-              </div>
-              <p
-                className="mt-1.5 m-0 text-xs leading-[1.5]"
-                style={{ color: 'var(--secondary-foreground)' }}
-              >
-                {card.desc}
-              </p>
-            </div>
-          ))}
+                  <td
+                    className="px-2 py-1"
+                    style={{
+                      color: 'var(--foreground)',
+                      borderBottom:
+                        idx < data.formulaRows.length - 1
+                          ? '1px solid color-mix(in srgb, var(--border) 70%, transparent)'
+                          : undefined,
+                    }}
+                  >
+                    {row.type}
+                  </td>
+                  <td
+                    className="px-2 py-1 font-semibold"
+                    style={{
+                      color: 'var(--chart-4)',
+                      borderBottom:
+                        idx < data.formulaRows.length - 1
+                          ? '1px solid color-mix(in srgb, var(--border) 70%, transparent)'
+                          : undefined,
+                    }}
+                  >
+                    {row.formula}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div
+            className="mt-auto rounded-md px-2.5 py-2"
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--chart-2) 12%, var(--card))',
+              borderLeft: '4px solid var(--chart-2)',
+            }}
+          >
+            <p
+              className="m-0 text-[13px] font-bold leading-[1.4]"
+              style={{ color: 'var(--chart-2)' }}
+            >
+              口诀：{data.formulaMnemonic}
+            </p>
+            <p
+              className="mt-0.5 m-0 text-[11px] leading-[1.4]"
+              style={{ color: 'var(--muted-foreground)' }}
+            >
+              {data.formulaMnemonicExplain}
+            </p>
+          </div>
         </div>
       </div>
 
+      {/* ========== 下部：鉴别诊断 + 西医治疗（2 列） ========== */}
       <div
-        className="mt-4 pt-3.5 text-center"
+        className="relative grid gap-2.5 flex-1 min-h-0"
+        style={{ gridTemplateColumns: '1fr 1fr', zIndex: 1 }}
+      >
+        {/* 鉴别诊断 */}
+        <div
+          className="rounded-[10px] p-3 flex flex-col gap-2"
+          style={{
+            backgroundColor: 'var(--card)',
+            borderLeft: '5px solid var(--chart-3)',
+          }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className="inline-block text-[12px] font-bold rounded-md px-2 py-0.5"
+              style={{ color: 'var(--chart-4)', backgroundColor: 'var(--chart-3)' }}
+            >
+              鉴别诊断
+            </span>
+            <span aria-hidden className="text-[14px]" style={{ lineHeight: '1' }}>
+              🔍
+            </span>
+          </div>
+          <table
+            className="w-full text-[12px] border-collapse"
+            style={{ backgroundColor: 'var(--card)' }}
+          >
+            <thead>
+              <tr style={{ backgroundColor: 'var(--sidebar)' }}>
+                <th
+                  className="text-left px-2 py-1 font-bold whitespace-nowrap"
+                  style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '32%' }}
+                >
+                  疾病
+                </th>
+                <th
+                  className="text-left px-2 py-1 font-bold whitespace-nowrap"
+                  style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)' }}
+                >
+                  鉴别点
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.differentialRows.map((row, idx) => (
+                <tr
+                  key={row.disease}
+                  style={{
+                    backgroundColor: row.alt
+                      ? 'color-mix(in srgb, var(--sidebar) 50%, var(--card))'
+                      : undefined,
+                  }}
+                >
+                  <td
+                    className="px-2 py-1 font-semibold"
+                    style={{
+                      color: 'var(--foreground)',
+                      borderBottom:
+                        idx < data.differentialRows.length - 1
+                          ? '1px solid color-mix(in srgb, var(--border) 70%, transparent)'
+                          : undefined,
+                    }}
+                  >
+                    {row.disease}
+                  </td>
+                  <td
+                    className="px-2 py-1"
+                    style={{
+                      color: 'var(--secondary-foreground)',
+                      borderBottom:
+                        idx < data.differentialRows.length - 1
+                          ? '1px solid color-mix(in srgb, var(--border) 70%, transparent)'
+                          : undefined,
+                    }}
+                  >
+                    {row.key}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 西医治疗速记 */}
+        <div
+          className="rounded-[10px] p-3 flex flex-col gap-2"
+          style={{
+            backgroundColor: 'var(--card)',
+            borderLeft: '5px solid var(--chart-4)',
+          }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className="inline-block text-[12px] font-bold rounded-md px-2 py-0.5"
+              style={{ color: 'var(--primary-foreground)', backgroundColor: 'var(--chart-4)' }}
+            >
+              西医治疗速记
+            </span>
+            <span aria-hidden className="text-[14px]" style={{ lineHeight: '1' }}>
+              💊
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            {data.treatmentCards.map((card) => (
+              <div
+                key={card.num}
+                className="rounded-md p-2"
+                style={{
+                  backgroundColor: 'var(--card)',
+                  border: '1px solid color-mix(in srgb, var(--chart-4) 20%, transparent)',
+                }}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="inline-flex items-center justify-center shrink-0 rounded-full text-[12px] font-bold"
+                    style={{
+                      width: '22px',
+                      height: '22px',
+                      backgroundColor: 'var(--chart-5)',
+                      color: 'var(--primary-foreground)',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
+                    {card.num}
+                  </span>
+                  <span
+                    className="text-[12px] font-semibold leading-tight"
+                    style={{ color: 'var(--foreground)' }}
+                  >
+                    {card.title}
+                  </span>
+                </div>
+                <p
+                  className="mt-1 m-0 text-[11px] leading-[1.4]"
+                  style={{ color: 'var(--secondary-foreground)' }}
+                >
+                  {card.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ========== 底部 Footer ========== */}
+      <footer
+        className="relative pt-2 text-center"
         style={{
           borderTop: '1px solid color-mix(in srgb, var(--chart-4) 18%, transparent)',
-          position: 'relative',
           zIndex: 1,
         }}
       >
@@ -642,7 +588,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
           <Heart size={12} style={{ color: 'var(--chart-2)' }} />
           {data.footer}
         </span>
-      </div>
+      </footer>
     </section>
   )
 })
