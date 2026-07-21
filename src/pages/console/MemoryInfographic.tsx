@@ -185,10 +185,10 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
       {/* ========== Header：badge + 标题 + 疾病名超大标题 ========== */}
       <header
         className="relative flex flex-col gap-1.5"
-        style={{ zIndex: 1, paddingRight: '128px' }}
+        style={{ zIndex: 1, paddingRight: '132px' }}
       >
         <span
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold w-fit"
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-semibold w-fit"
           style={{ color: 'var(--chart-4)', backgroundColor: 'var(--card)' }}
         >
           <span
@@ -198,14 +198,14 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
           {data.topicBadge}
         </span>
         <h3
-          className="m-0 leading-[1.2] text-[14px] font-bold"
+          className="m-0 leading-[1.2] text-[16px] font-bold"
           style={{ color: 'var(--chart-4)' }}
         >
           {data.title}
         </h3>
         {/* 疾病名称超大标题（抓眼球核心）*/}
         <h2
-          className="m-0 leading-[1.15] text-[28px] font-extrabold tracking-tight"
+          className="m-0 leading-[1.15] text-[32px] font-extrabold tracking-tight"
           style={{ color: 'var(--foreground)' }}
         >
           {data.subtitle}
@@ -219,21 +219,21 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
       >
         <div className="flex items-center justify-between gap-2">
           <span
-            className="inline-block text-[12px] font-bold rounded-md px-2 py-0.5"
+            className="inline-block text-[14px] font-bold rounded-md px-2.5 py-1"
             style={{ color: 'var(--primary-foreground)', backgroundColor: 'var(--chart-1)' }}
           >
             核心症状
           </span>
-          <span aria-hidden className="text-[16px]" style={{ lineHeight: '1' }}>🩺</span>
+          <span aria-hidden className="text-[18px]" style={{ lineHeight: '1' }}>🩺</span>
         </div>
         <div className="flex gap-2 justify-between">
           {data.coreSymptoms.map((char) => (
             <span
               key={char}
-              className="inline-flex items-center justify-center shrink-0 rounded-full text-[20px] font-bold"
+              className="inline-flex items-center justify-center shrink-0 rounded-full text-[24px] font-bold"
               style={{
-                width: '46px',
-                height: '46px',
+                width: '54px',
+                height: '54px',
                 backgroundColor: 'color-mix(in srgb, var(--chart-1) 14%, var(--card))',
                 color: 'var(--chart-4)',
                 border: '1px solid color-mix(in srgb, var(--chart-1) 30%, transparent)',
@@ -244,7 +244,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
           ))}
         </div>
         <p
-          className="m-0 text-[12.5px] leading-[1.5]"
+          className="m-0 text-[15px] leading-[1.55]"
           style={{ color: 'var(--secondary-foreground)' }}
         >
           {data.diagnosisStandard}
@@ -256,9 +256,9 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
             borderLeft: '4px solid var(--chart-2)',
           }}
         >
-          <TriangleAlert size={14} style={{ color: 'var(--chart-2)', flexShrink: 0, marginTop: '2px' }} />
+          <TriangleAlert size={16} style={{ color: 'var(--chart-2)', flexShrink: 0, marginTop: '2px' }} />
           <p
-            className="m-0 text-[12.5px] leading-[1.5] font-semibold"
+            className="m-0 text-[15px] leading-[1.55] font-semibold"
             style={{ color: 'var(--foreground)' }}
           >
             必背诊断标准：{data.keyDiagnosisCriteria}
@@ -273,30 +273,30 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
       >
         <div className="flex items-center justify-between gap-2">
           <span
-            className="inline-block text-[12px] font-bold rounded-md px-2 py-0.5"
+            className="inline-block text-[14px] font-bold rounded-md px-2.5 py-1"
             style={{ color: 'var(--chart-4)', backgroundColor: 'var(--chart-5)' }}
           >
             辨证选方·必背
           </span>
-          <span aria-hidden className="text-[16px]" style={{ lineHeight: '1' }}>🌿</span>
+          <span aria-hidden className="text-[18px]" style={{ lineHeight: '1' }}>🌿</span>
         </div>
-        <table className="w-full text-[12px] border-collapse" style={{ backgroundColor: 'var(--card)' }}>
+        <table className="w-full text-[14px] border-collapse" style={{ backgroundColor: 'var(--card)' }}>
           <thead>
             <tr style={{ backgroundColor: 'var(--sidebar)' }}>
               <th
-                className="text-left px-2 py-1 font-bold whitespace-nowrap"
-                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '32%' }}
+                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
+                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '30%' }}
               >
                 证型
               </th>
               <th
-                className="text-left px-2 py-1 font-bold whitespace-nowrap"
-                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '30%' }}
+                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
+                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '32%' }}
               >
                 抓主症
               </th>
               <th
-                className="text-left px-2 py-1 font-bold whitespace-nowrap"
+                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
                 style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)' }}
               >
                 方剂
@@ -314,7 +314,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                 }}
               >
                 <td
-                  className="px-2 py-1"
+                  className="px-2.5 py-1.5 font-semibold"
                   style={{
                     color: 'var(--foreground)',
                     borderBottom:
@@ -326,7 +326,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                   {row.type}
                 </td>
                 <td
-                  className="px-2 py-1"
+                  className="px-2.5 py-1.5"
                   style={{
                     color: 'var(--secondary-foreground)',
                     borderBottom:
@@ -338,7 +338,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                   {row.symptom}
                 </td>
                 <td
-                  className="px-2 py-1 font-semibold"
+                  className="px-2.5 py-1.5 font-bold"
                   style={{
                     color: 'var(--chart-4)',
                     borderBottom:
@@ -362,13 +362,13 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
           }}
         >
           <p
-            className="m-0 text-[13px] font-bold leading-[1.4]"
+            className="m-0 text-[16px] font-bold leading-[1.45]"
             style={{ color: 'var(--chart-2)' }}
           >
             口诀：{data.formulaMnemonic}
           </p>
           <p
-            className="mt-0.5 m-0 text-[11px] leading-[1.4]"
+            className="mt-0.5 m-0 text-[13px] leading-[1.45]"
             style={{ color: 'var(--muted-foreground)' }}
           >
             {data.formulaMnemonicExplain}
@@ -383,31 +383,31 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
       >
         <div className="flex items-center justify-between gap-2">
           <span
-            className="inline-block text-[12px] font-bold rounded-md px-2 py-0.5"
+            className="inline-block text-[14px] font-bold rounded-md px-2.5 py-1"
             style={{ color: 'var(--chart-4)', backgroundColor: 'var(--chart-3)' }}
           >
             鉴别诊断
           </span>
-          <span aria-hidden className="text-[14px]" style={{ lineHeight: '1' }}>🔍</span>
+          <span aria-hidden className="text-[16px]" style={{ lineHeight: '1' }}>🔍</span>
         </div>
-        <table className="w-full text-[12px] border-collapse" style={{ backgroundColor: 'var(--card)' }}>
+        <table className="w-full text-[14px] border-collapse" style={{ backgroundColor: 'var(--card)' }}>
           <thead>
             <tr style={{ backgroundColor: 'var(--sidebar)' }}>
               <th
-                className="text-left px-2 py-1 font-bold whitespace-nowrap"
-                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '28%' }}
+                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
+                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '26%' }}
               >
                 疾病
               </th>
               <th
-                className="text-left px-2 py-1 font-bold whitespace-nowrap"
+                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
                 style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)' }}
               >
                 症状特征
               </th>
               <th
-                className="text-left px-2 py-1 font-bold whitespace-nowrap"
-                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '28%' }}
+                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
+                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '30%' }}
               >
                 关键鉴别点
               </th>
@@ -424,7 +424,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                 }}
               >
                 <td
-                  className="px-2 py-1 font-semibold"
+                  className="px-2.5 py-1.5 font-semibold"
                   style={{
                     color: 'var(--foreground)',
                     borderBottom:
@@ -436,7 +436,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                   {row.disease}
                 </td>
                 <td
-                  className="px-2 py-1"
+                  className="px-2.5 py-1.5"
                   style={{
                     color: 'var(--secondary-foreground)',
                     borderBottom:
@@ -448,7 +448,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                   {row.symptom}
                 </td>
                 <td
-                  className="px-2 py-1"
+                  className="px-2.5 py-1.5"
                   style={{
                     color: 'var(--secondary-foreground)',
                     borderBottom:
@@ -472,12 +472,12 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
       >
         <div className="flex items-center justify-between gap-2">
           <span
-            className="inline-block text-[12px] font-bold rounded-md px-2 py-0.5"
+            className="inline-block text-[14px] font-bold rounded-md px-2.5 py-1"
             style={{ color: 'var(--primary-foreground)', backgroundColor: 'var(--chart-4)' }}
           >
             西医治疗速记
           </span>
-          <span aria-hidden className="text-[14px]" style={{ lineHeight: '1' }}>💊</span>
+          <span aria-hidden className="text-[16px]" style={{ lineHeight: '1' }}>💊</span>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
           {data.treatmentCards.map((card) => (
@@ -491,10 +491,10 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
             >
               <div className="flex items-center gap-1.5">
                 <span
-                  className="inline-flex items-center justify-center shrink-0 rounded-full text-[11px] font-bold"
+                  className="inline-flex items-center justify-center shrink-0 rounded-full text-[13px] font-bold"
                   style={{
-                    width: '20px',
-                    height: '20px',
+                    width: '24px',
+                    height: '24px',
                     backgroundColor: 'var(--chart-5)',
                     color: 'var(--primary-foreground)',
                     fontFamily: 'var(--font-mono)',
@@ -503,14 +503,14 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                   {card.num}
                 </span>
                 <span
-                  className="text-[12px] font-semibold leading-tight"
+                  className="text-[14px] font-semibold leading-tight"
                   style={{ color: 'var(--foreground)' }}
                 >
                   {card.title}
                 </span>
               </div>
               <p
-                className="mt-1 m-0 text-[11px] leading-[1.4]"
+                className="mt-1 m-0 text-[13px] leading-[1.45]"
                 style={{ color: 'var(--secondary-foreground)' }}
               >
                 {card.desc}
@@ -559,10 +559,10 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         />
         {/* 中间文字 */}
         <span
-          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-center flex-1 min-w-0"
+          className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-center flex-1 min-w-0"
           style={{ color: 'var(--chart-4)' }}
         >
-          <Heart size={12} style={{ color: 'var(--chart-2)', flexShrink: 0 }} />
+          <Heart size={13} style={{ color: 'var(--chart-2)', flexShrink: 0 }} />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {data.footer}
           </span>
