@@ -88,16 +88,15 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
       id="memory-infographic"
       className="relative overflow-hidden"
       style={{
-        // 高度由内容撑开（短内容至少保持 3:4 视觉比例，长内容自动加长，绝不裁剪）
+        // 高度由内容撑开，排版紧凑不留白，内容多自动加长但不主动留空
         width: '100%',
-        minHeight: '560px',
         background:
           'linear-gradient(170deg, color-mix(in srgb, var(--sidebar) 88%, var(--card)) 0%, color-mix(in srgb, var(--accent) 82%, var(--card)) 100%)',
         borderRadius: '12px',
-        padding: '18px 20px',
+        padding: '14px 16px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px',
+        gap: '6px',
       }}
     >
       {/* ========== 导出按钮（导出时自动排除）========== */}
@@ -122,17 +121,17 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         {exporting ? '导出中…' : '导出图片'}
       </button>
 
-      {/* ========== 右上角 Q版图1：讲解授课（主形象，最大，无背景 PNG 直接贴）========== */}
+      {/* ========== 右上角 Q版图1：讲解授课（主形象）========== */}
       <img
         src={mascotTeach}
         alt="有天同学-讲解授课"
         aria-hidden
         className="pointer-events-none absolute"
         style={{
-          top: '8px',
-          right: '6px',
-          width: '120px',
-          height: '120px',
+          top: '4px',
+          right: '4px',
+          width: '96px',
+          height: '96px',
           objectFit: 'contain',
           filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.18))',
           zIndex: 3,
@@ -150,62 +149,32 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
       {/* 注意：这张图改为由 Footer 用 flex 布局容纳，避免 absolute 与文字重叠 */}
       {/* 见下方 Footer */}
 
-      {/* ========== 装饰背景 emoji（不遮挡内容）========== */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute"
-        style={{
-          top: '8px',
-          left: '-8px',
-          fontSize: '60px',
-          opacity: 0.08,
-          transform: 'rotate(-15deg)',
-          zIndex: 0,
-          lineHeight: '1',
-        }}
-      >
-        🩺
-      </span>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute"
-        style={{
-          bottom: '90px',
-          right: '-6px',
-          fontSize: '44px',
-          opacity: 0.09,
-          transform: 'rotate(20deg)',
-          zIndex: 0,
-          lineHeight: '1',
-        }}
-      >
-        💊
-      </span>
+      {/* 装饰背景 emoji 已移除：避免无意义占位、排版更紧凑 */}
 
       {/* ========== Header：badge + 标题 + 疾病名超大标题 ========== */}
       <header
-        className="relative flex flex-col gap-1.5"
-        style={{ zIndex: 1, paddingRight: '132px' }}
+        className="relative flex flex-col gap-1"
+        style={{ zIndex: 1, paddingRight: '104px' }}
       >
         <span
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-semibold w-fit"
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[14px] font-bold w-fit"
           style={{ color: 'var(--chart-4)', backgroundColor: 'var(--card)' }}
         >
           <span
             className="rounded-full"
-            style={{ width: '6px', height: '6px', backgroundColor: 'var(--primary)' }}
+            style={{ width: '7px', height: '7px', backgroundColor: 'var(--primary)' }}
           />
           {data.topicBadge}
         </span>
         <h3
-          className="m-0 leading-[1.2] text-[16px] font-bold"
+          className="m-0 leading-[1.15] text-[17px] font-extrabold"
           style={{ color: 'var(--chart-4)' }}
         >
           {data.title}
         </h3>
         {/* 疾病名称超大标题（抓眼球核心）*/}
         <h2
-          className="m-0 leading-[1.15] text-[32px] font-extrabold tracking-tight"
+          className="m-0 leading-[1.1] text-[34px] font-black tracking-tight"
           style={{ color: 'var(--foreground)' }}
         >
           {data.subtitle}
@@ -214,29 +183,29 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
 
       {/* ========== 板块 1：核心症状 + 诊断标准 + 必背标准 ========== */}
       <div
-        className="relative rounded-[10px] p-3 flex flex-col gap-2"
+        className="relative rounded-[10px] px-2.5 py-2 flex flex-col gap-1.5"
         style={{ backgroundColor: 'var(--card)', borderLeft: '5px solid var(--chart-1)', zIndex: 1 }}
       >
         <div className="flex items-center justify-between gap-2">
           <span
-            className="inline-block text-[14px] font-bold rounded-md px-2.5 py-1"
+            className="inline-block text-[15px] font-extrabold rounded-md px-2.5 py-0.5"
             style={{ color: 'var(--primary-foreground)', backgroundColor: 'var(--chart-1)' }}
           >
             核心症状
           </span>
-          <span aria-hidden className="text-[18px]" style={{ lineHeight: '1' }}>🩺</span>
+          <span aria-hidden className="text-[16px]" style={{ lineHeight: '1' }}>🩺</span>
         </div>
         <div className="flex gap-2 justify-between">
           {data.coreSymptoms.map((char) => (
             <span
               key={char}
-              className="inline-flex items-center justify-center shrink-0 rounded-full text-[24px] font-bold"
+              className="inline-flex items-center justify-center shrink-0 rounded-full text-[26px] font-black"
               style={{
-                width: '54px',
-                height: '54px',
+                width: '52px',
+                height: '52px',
                 backgroundColor: 'color-mix(in srgb, var(--chart-1) 14%, var(--card))',
                 color: 'var(--chart-4)',
-                border: '1px solid color-mix(in srgb, var(--chart-1) 30%, transparent)',
+                border: '1.5px solid color-mix(in srgb, var(--chart-1) 35%, transparent)',
               }}
             >
               {char}
@@ -244,21 +213,21 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
           ))}
         </div>
         <p
-          className="m-0 text-[15px] leading-[1.55]"
+          className="m-0 text-[16px] leading-[1.45] font-medium"
           style={{ color: 'var(--secondary-foreground)' }}
         >
           {data.diagnosisStandard}
         </p>
         <div
-          className="rounded-md px-2.5 py-2 flex items-start gap-1.5"
+          className="rounded-md px-2 py-1.5 flex items-start gap-1.5"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--chart-2) 12%, var(--card))',
             borderLeft: '4px solid var(--chart-2)',
           }}
         >
-          <TriangleAlert size={16} style={{ color: 'var(--chart-2)', flexShrink: 0, marginTop: '2px' }} />
+          <TriangleAlert size={17} style={{ color: 'var(--chart-2)', flexShrink: 0, marginTop: '2px' }} />
           <p
-            className="m-0 text-[15px] leading-[1.55] font-semibold"
+            className="m-0 text-[16px] leading-[1.45] font-bold"
             style={{ color: 'var(--foreground)' }}
           >
             必背诊断标准：{data.keyDiagnosisCriteria}
@@ -268,36 +237,36 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
 
       {/* ========== 板块 2：辨证选方·必背 + 口诀 ========== */}
       <div
-        className="relative rounded-[10px] p-3 flex flex-col gap-2"
+        className="relative rounded-[10px] px-2.5 py-2 flex flex-col gap-1.5"
         style={{ backgroundColor: 'var(--card)', borderLeft: '5px solid var(--chart-5)', zIndex: 1 }}
       >
         <div className="flex items-center justify-between gap-2">
           <span
-            className="inline-block text-[14px] font-bold rounded-md px-2.5 py-1"
+            className="inline-block text-[15px] font-extrabold rounded-md px-2.5 py-0.5"
             style={{ color: 'var(--chart-4)', backgroundColor: 'var(--chart-5)' }}
           >
             辨证选方·必背
           </span>
-          <span aria-hidden className="text-[18px]" style={{ lineHeight: '1' }}>🌿</span>
+          <span aria-hidden className="text-[16px]" style={{ lineHeight: '1' }}>🌿</span>
         </div>
-        <table className="w-full text-[14px] border-collapse" style={{ backgroundColor: 'var(--card)' }}>
+        <table className="w-full text-[16px] border-collapse" style={{ backgroundColor: 'var(--card)' }}>
           <thead>
             <tr style={{ backgroundColor: 'var(--sidebar)' }}>
               <th
-                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
-                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '30%' }}
+                className="text-left px-2 py-1 font-extrabold whitespace-nowrap"
+                style={{ color: 'var(--chart-4)', borderBottom: '1.5px solid var(--border)', width: '28%' }}
               >
                 证型
               </th>
               <th
-                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
-                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '32%' }}
+                className="text-left px-2 py-1 font-extrabold whitespace-nowrap"
+                style={{ color: 'var(--chart-4)', borderBottom: '1.5px solid var(--border)', width: '34%' }}
               >
                 抓主症
               </th>
               <th
-                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
-                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)' }}
+                className="text-left px-2 py-1 font-extrabold whitespace-nowrap"
+                style={{ color: 'var(--chart-4)', borderBottom: '1.5px solid var(--border)' }}
               >
                 方剂
               </th>
@@ -314,7 +283,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                 }}
               >
                 <td
-                  className="px-2.5 py-1.5 font-semibold"
+                  className="px-2 py-1 font-bold"
                   style={{
                     color: 'var(--foreground)',
                     borderBottom:
@@ -326,7 +295,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                   {row.type}
                 </td>
                 <td
-                  className="px-2.5 py-1.5"
+                  className="px-2 py-1"
                   style={{
                     color: 'var(--secondary-foreground)',
                     borderBottom:
@@ -338,7 +307,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                   {row.symptom}
                 </td>
                 <td
-                  className="px-2.5 py-1.5 font-bold"
+                  className="px-2 py-1 font-extrabold"
                   style={{
                     color: 'var(--chart-4)',
                     borderBottom:
@@ -355,20 +324,20 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
         </table>
         {/* 速记口诀：完整显示，不被遮挡 */}
         <div
-          className="rounded-md px-2.5 py-2"
+          className="rounded-md px-2 py-1.5"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--chart-2) 12%, var(--card))',
             borderLeft: '4px solid var(--chart-2)',
           }}
         >
           <p
-            className="m-0 text-[16px] font-bold leading-[1.45]"
+            className="m-0 text-[18px] font-extrabold leading-[1.35]"
             style={{ color: 'var(--chart-2)' }}
           >
             口诀：{data.formulaMnemonic}
           </p>
           <p
-            className="mt-0.5 m-0 text-[13px] leading-[1.45]"
+            className="mt-0.5 m-0 text-[14px] leading-[1.4] font-medium"
             style={{ color: 'var(--muted-foreground)' }}
           >
             {data.formulaMnemonicExplain}
@@ -378,36 +347,36 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
 
       {/* ========== 板块 3：鉴别诊断 ========== */}
       <div
-        className="relative rounded-[10px] p-3 flex flex-col gap-2"
+        className="relative rounded-[10px] px-2.5 py-2 flex flex-col gap-1.5"
         style={{ backgroundColor: 'var(--card)', borderLeft: '5px solid var(--chart-3)', zIndex: 1 }}
       >
         <div className="flex items-center justify-between gap-2">
           <span
-            className="inline-block text-[14px] font-bold rounded-md px-2.5 py-1"
+            className="inline-block text-[15px] font-extrabold rounded-md px-2.5 py-0.5"
             style={{ color: 'var(--chart-4)', backgroundColor: 'var(--chart-3)' }}
           >
             鉴别诊断
           </span>
-          <span aria-hidden className="text-[16px]" style={{ lineHeight: '1' }}>🔍</span>
+          <span aria-hidden className="text-[14px]" style={{ lineHeight: '1' }}>🔍</span>
         </div>
-        <table className="w-full text-[14px] border-collapse" style={{ backgroundColor: 'var(--card)' }}>
+        <table className="w-full text-[15px] border-collapse" style={{ backgroundColor: 'var(--card)' }}>
           <thead>
             <tr style={{ backgroundColor: 'var(--sidebar)' }}>
               <th
-                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
-                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '26%' }}
+                className="text-left px-2 py-1 font-extrabold whitespace-nowrap"
+                style={{ color: 'var(--chart-4)', borderBottom: '1.5px solid var(--border)', width: '24%' }}
               >
                 疾病
               </th>
               <th
-                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
-                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)' }}
+                className="text-left px-2 py-1 font-extrabold whitespace-nowrap"
+                style={{ color: 'var(--chart-4)', borderBottom: '1.5px solid var(--border)' }}
               >
                 症状特征
               </th>
               <th
-                className="text-left px-2.5 py-1.5 font-bold whitespace-nowrap"
-                style={{ color: 'var(--chart-4)', borderBottom: '1px solid var(--border)', width: '30%' }}
+                className="text-left px-2 py-1 font-extrabold whitespace-nowrap"
+                style={{ color: 'var(--chart-4)', borderBottom: '1.5px solid var(--border)', width: '32%' }}
               >
                 关键鉴别点
               </th>
@@ -424,7 +393,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                 }}
               >
                 <td
-                  className="px-2.5 py-1.5 font-semibold"
+                  className="px-2 py-1 font-bold"
                   style={{
                     color: 'var(--foreground)',
                     borderBottom:
@@ -436,7 +405,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                   {row.disease}
                 </td>
                 <td
-                  className="px-2.5 py-1.5"
+                  className="px-2 py-1"
                   style={{
                     color: 'var(--secondary-foreground)',
                     borderBottom:
@@ -448,7 +417,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                   {row.symptom}
                 </td>
                 <td
-                  className="px-2.5 py-1.5"
+                  className="px-2 py-1 font-medium"
                   style={{
                     color: 'var(--secondary-foreground)',
                     borderBottom:
@@ -467,23 +436,23 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
 
       {/* ========== 板块 4：西医治疗速记 ========== */}
       <div
-        className="relative rounded-[10px] p-3 flex flex-col gap-2"
+        className="relative rounded-[10px] px-2.5 py-2 flex flex-col gap-1.5"
         style={{ backgroundColor: 'var(--card)', borderLeft: '5px solid var(--chart-4)', zIndex: 1 }}
       >
         <div className="flex items-center justify-between gap-2">
           <span
-            className="inline-block text-[14px] font-bold rounded-md px-2.5 py-1"
+            className="inline-block text-[15px] font-extrabold rounded-md px-2.5 py-0.5"
             style={{ color: 'var(--primary-foreground)', backgroundColor: 'var(--chart-4)' }}
           >
             西医治疗速记
           </span>
-          <span aria-hidden className="text-[16px]" style={{ lineHeight: '1' }}>💊</span>
+          <span aria-hidden className="text-[14px]" style={{ lineHeight: '1' }}>💊</span>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
           {data.treatmentCards.map((card) => (
             <div
               key={card.num}
-              className="rounded-md p-2"
+              className="rounded-md px-2 py-1.5"
               style={{
                 backgroundColor: 'var(--card)',
                 border: '1px solid color-mix(in srgb, var(--chart-4) 20%, transparent)',
@@ -491,7 +460,7 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
             >
               <div className="flex items-center gap-1.5">
                 <span
-                  className="inline-flex items-center justify-center shrink-0 rounded-full text-[13px] font-bold"
+                  className="inline-flex items-center justify-center shrink-0 rounded-full text-[14px] font-extrabold"
                   style={{
                     width: '24px',
                     height: '24px',
@@ -503,14 +472,14 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
                   {card.num}
                 </span>
                 <span
-                  className="text-[14px] font-semibold leading-tight"
+                  className="text-[16px] font-extrabold leading-tight"
                   style={{ color: 'var(--foreground)' }}
                 >
                   {card.title}
                 </span>
               </div>
               <p
-                className="mt-1 m-0 text-[13px] leading-[1.45]"
+                className="mt-0.5 m-0 text-[14px] leading-[1.4] font-medium"
                 style={{ color: 'var(--secondary-foreground)' }}
               >
                 {card.desc}
@@ -522,64 +491,64 @@ const MemoryInfographic = forwardRef<HTMLElement, MemoryInfographicProps>(functi
 
       {/* ========== Footer：用 flex 容纳 3 张 Q版图，文字居中，互不遮挡 ========== */}
       <footer
-        className="relative pt-2 flex items-center justify-between gap-2"
+        className="relative pt-1.5 flex items-center justify-between gap-2"
         style={{
-          borderTop: '1px solid color-mix(in srgb, var(--chart-4) 18%, transparent)',
+          borderTop: '1.5px solid color-mix(in srgb, var(--chart-4) 22%, transparent)',
           zIndex: 4,
         }}
       >
-        {/* 左下角：伏案学习（中大尺寸）*/}
+        {/* 左下角：伏案学习 */}
         <img
           src={mascotLearn}
           alt="有天同学-伏案学习"
           aria-hidden
           className="pointer-events-none shrink-0"
           style={{
-            width: '84px',
-            height: '84px',
+            width: '64px',
+            height: '64px',
             objectFit: 'contain',
-            filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.15))',
-            marginTop: '-24px',
-            marginLeft: '-4px',
+            filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.15))',
+            marginTop: '-18px',
+            marginLeft: '-2px',
           }}
         />
-        {/* 中间偏左：灵光一现（小尺寸，重新安置，避免与板块 1 重叠）*/}
+        {/* 中间偏左：灵光一现 */}
         <img
           src={mascotIdea}
           alt="有天同学-灵光一现"
           aria-hidden
           className="pointer-events-none shrink-0"
           style={{
-            width: '52px',
-            height: '52px',
+            width: '44px',
+            height: '44px',
             objectFit: 'contain',
             filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.12))',
-            marginTop: '-12px',
+            marginTop: '-10px',
           }}
         />
         {/* 中间文字 */}
         <span
-          className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-center flex-1 min-w-0"
+          className="inline-flex items-center gap-1.5 text-[15px] font-extrabold text-center flex-1 min-w-0"
           style={{ color: 'var(--chart-4)' }}
         >
-          <Heart size={13} style={{ color: 'var(--chart-2)', flexShrink: 0 }} />
+          <Heart size={15} style={{ color: 'var(--chart-2)', flexShrink: 0 }} />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {data.footer}
           </span>
         </span>
-        {/* 右下角：从容点赞（小尺寸）*/}
+        {/* 右下角：从容点赞 */}
         <img
           src={mascotLike}
           alt="有天同学-从容点赞"
           aria-hidden
           className="pointer-events-none shrink-0"
           style={{
-            width: '60px',
-            height: '60px',
+            width: '48px',
+            height: '48px',
             objectFit: 'contain',
             filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.12))',
-            marginTop: '-16px',
-            marginRight: '-4px',
+            marginTop: '-12px',
+            marginRight: '-2px',
           }}
         />
       </footer>
