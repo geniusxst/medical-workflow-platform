@@ -227,10 +227,9 @@ export function useGenerate() {
           ...(accessCode ? { 'X-Access-Code': accessCode } : {}),
         },
         body: JSON.stringify({ topic }),
-        // 流式输出下数据持续流动，不会触发 Netlify 网关 30s Inactivity Timeout。
-        // 这里给 120s 总超时，覆盖 GLM-4.5-Air 实测 28-31s 的完整生成时间，
-        // 避免 30s 过紧导致生成接近完成时被前端中断。
-        signal: AbortSignal.timeout(120000),
+        // DeepSeek 官网 + JSON mode 实测 5-10s 完成。
+        // Vercel Node Runtime 函数超时 60s，前端给 90s 总超时留足余量。
+        signal: AbortSignal.timeout(90000),
       })
       if (response.status === 401) {
         throw new Error('访问口令错误或已失效，请重新输入口令')
