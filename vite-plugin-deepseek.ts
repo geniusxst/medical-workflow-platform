@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
-import { examKnowledge } from './src/data/exam-knowledge.ts'
+import { findRelevantKnowledge } from './src/data/exam-knowledge-index.ts'
 
-const SYSTEM_PROMPT = `你是一位资深的中西医执业医师考试辅导专家，严格依据2026年中西医执业医师考试官方大纲。
+const SYSTEM_PROMPT_HEAD = `你是一位资深的中西医执业医师考试辅导专家，严格依据2026年中西医执业医师考试官方大纲。
 
 【最高优先级原则】
 你必须严格依据下方"考试资料知识库"生成中医内容（证型、选方、辨证秒杀、治法），不得自行编造或更改。
@@ -35,14 +35,6 @@ const SYSTEM_PROMPT = `你是一位资深的中西医执业医师考试辅导专
 17. memoryInfographic.keyDiagnosisCriteria 是该疾病最具特异性、最必背的诊断标准（必须随疾病改变，是关键指标/阈值/体征，例如：肺心病填"超声心动图 PASP ＞ 35mmHg ＋ 右心室肥厚扩大"；糖尿病填"空腹血糖 ≥ 7.0mmol/L 或 OGTT 2h血糖 ≥ 11.1mmol/L"；高血压填"非同日3次诊室血压 ≥ 140/90mmHg"）
 
 请直接返回JSON，不要有任何额外文字或markdown格式标记。
-
-【极其重要·精简原则】为避免超时，所有字段都要精简：
-- 每个字符串字段控制在30字以内，能用短句不要用长句
-- syndromes/formulaRows 证型名+方剂名即可，symptom 抓主症4-8字
-- westernTreatment 每条10-15字
-- differentialRows 的 symptom 和 key 各15字以内
-- treatmentCards 的 desc 15字以内
-- 不要输出任何注释、解释、说明文字，只输出JSON本身
 
 【极其重要】所有数组元素必须是"对象"或"字符串"按下方示例的结构，绝对不能把对象数组退化成字符串数组。具体要求：
 - syndromes、formulaRows、differentialRows、treatmentCards、compliance 必须是「对象数组」，每个元素都是带固定字段的对象（绝不能只写证型名字符串）
@@ -97,9 +89,12 @@ JSON 顶层结构示例（必须严格按此字段结构填充）：
 
 【考试资料知识库】
 以下是2026年中西医执业医师实践技能考试第一站辨证选方速记官方资料，所有中医证型与选方必须严格以此为准：
-
-${examKnowledge}
 `
+
+function buildSystemPrompt(topic: string): string {
+  // 按用户查询的疾病只注入相关知识库条目，避免 54KB 全量 prompt 拖慢生成
+  return SYSTEM_PROMPT_HEAD + findRelevantKnowledge(topic)
+}
 
 export function deepseekApiPlugin(apiKey: string): Plugin {
   // 本地开发同样支持通过环境变量切换 DeepSeek 官方 / 硅基流动
@@ -153,12 +148,11 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
               body: JSON.stringify({
                 model: modelName,
                 messages: [
-                  { role: 'system', content: SYSTEM_PROMPT },
+                  { role: 'system', content: buildSystemPrompt(topic) },
                   { role: 'user', content: topic },
                 ],
                 temperature: 0.3,
-                max_tokens: 4000,
-                // GLM-4.5-Air 等模型不支持 response_format，改用 prompt 约束
+                response_format: { type: 'json_object' },
               }),
             })
 
@@ -170,24 +164,12 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
             }
 
             const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
-            let content = data.choices?.[0]?.message?.content || ''
+            const content = data.choices?.[0]?.message?.content
 
             if (!content) {
               res.statusCode = 500
               res.end(JSON.stringify({ error: 'API 返回内容为空' }))
               return
-            }
-
-            // 清理可能的 markdown 包裹和多余文字
-            content = content.trim()
-            const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-            if (fenceMatch) {
-              content = fenceMatch[1].trim()
-            }
-            const firstBrace = content.indexOf('{')
-            const lastBrace = content.lastIndexOf('}')
-            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-              content = content.slice(firstBrace, lastBrace + 1)
             }
 
             res.statusCode = 200
