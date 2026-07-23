@@ -126,30 +126,6 @@ function buildSystemPrompt(topic: string): string {
   return SYSTEM_PROMPT_HEAD + findRelevantKnowledge(topic)
 }
 
-/**
- * 从模型输出里提取 JSON 字符串。
- * GLM 等不支持 json mode 的模型可能把 JSON 包在 ```json ... ``` 里，
- * 或前后带解释性文字。这里依次尝试：直接 parse → 去代码块 → 截取首尾大括号。
- */
-function extractJson(content: string): string {
-  const trimmed = content.trim()
-  // 1. 直接是合法 JSON
-  try { JSON.parse(trimmed); return trimmed } catch { /* 继续兜底 */ }
-  // 2. 去掉 ```json ... ``` 或 ``` ... ``` 包裹
-  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
-  if (fenceMatch) {
-    const inner = fenceMatch[1].trim()
-    try { JSON.parse(inner); return inner } catch { /* 继续兜底 */ }
-  }
-  // 3. 截取第一个 { 到最后一个 }
-  const first = trimmed.indexOf('{')
-  const last = trimmed.lastIndexOf('}')
-  if (first !== -1 && last > first) {
-    return trimmed.slice(first, last + 1)
-  }
-  return trimmed
-}
-
 // CORS 白名单：只允许自己的站点调用，防止被第三方网站薅 API。
 // 支持通配符匹配 *.vercel.app（Vercel 预览/生产域名）+ *.netlify.app（保留回退能力）。
 const ALLOWED_ORIGIN_PATTERNS = [
@@ -189,6 +165,12 @@ export const config = {
   // Vercel Hobby 流式函数最长 60s（远超 Netlify 免费版 10s），覆盖 V3.2 的 8-15s 生成。
   maxDuration: 60,
 }
+
+// 关键：使用 Edge Runtime。
+// Vercel 默认 Node Runtime 对 Web 标准 ReadableStream 流式响应支持不完整，
+// 会导致函数崩溃返回 500。Edge Runtime 完整支持 Request/Response/ReadableStream
+// 等 Web 标准 API，是流式响应最可靠的运行时。
+export const runtime = 'edge'
 
 export default async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
