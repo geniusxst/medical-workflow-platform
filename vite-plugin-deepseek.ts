@@ -94,6 +94,14 @@ ${examKnowledge}
 `
 
 export function deepseekApiPlugin(apiKey: string): Plugin {
+  // 本地开发同样支持通过环境变量切换 DeepSeek 官方 / 硅基流动
+  const provider = (process.env.API_PROVIDER || 'deepseek').toLowerCase()
+  let apiBase = 'https://api.deepseek.com/v1'
+  let modelName = 'deepseek-chat'
+  if (provider === 'siliconflow' || provider === 'silicon') {
+    apiBase = 'https://api.siliconflow.cn/v1'
+    modelName = process.env.API_MODEL || 'deepseek-ai/DeepSeek-V3'
+  }
   return {
     name: 'deepseek-api-plugin',
     configureServer(server) {
@@ -128,14 +136,14 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
               return
             }
 
-            const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+            const response = await fetch(`${apiBase}/chat/completions`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`,
               },
               body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: modelName,
                 messages: [
                   { role: 'system', content: SYSTEM_PROMPT },
                   { role: 'user', content: topic },

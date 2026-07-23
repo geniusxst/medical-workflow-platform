@@ -165,6 +165,17 @@ export default async (req: Request): Promise<Response> => {
     return jsonResponse({ error: "DEEPSEEK_API_KEY 环境变量未配置" }, 500, req)
   }
 
+  // ===== API 提供商配置（支持 DeepSeek 官方 / 硅基流动，通过环境变量切换）=====
+  // 不配置 API_PROVIDER 时默认走 DeepSeek 官方
+  const provider = (process.env.API_PROVIDER || "deepseek").toLowerCase()
+  let apiBase = "https://api.deepseek.com/v1"
+  let modelName = "deepseek-chat"
+  if (provider === "siliconflow" || provider === "silicon") {
+    apiBase = "https://api.siliconflow.cn/v1"
+    // 硅基流动上 DeepSeek 模型名带前缀；优先用环境变量自定义，否则默认 V3
+    modelName = process.env.API_MODEL || "deepseek-ai/DeepSeek-V3"
+  }
+
   try {
     const body = (await req.json()) as { topic?: string }
     const topic = body.topic?.trim()
@@ -173,14 +184,14 @@ export default async (req: Request): Promise<Response> => {
       return jsonResponse({ error: "缺少 topic 参数" }, 400, req)
     }
 
-    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    const response = await fetch(`${apiBase}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: modelName,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: topic },
