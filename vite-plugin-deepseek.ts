@@ -100,7 +100,7 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
   let modelName = 'deepseek-chat'
   if (provider === 'siliconflow' || provider === 'silicon') {
     apiBase = 'https://api.siliconflow.cn/v1'
-    modelName = process.env.API_MODEL || 'deepseek-ai/DeepSeek-V3'
+    modelName = process.env.API_MODEL || 'deepseek-ai/DeepSeek-V4-Flash'
   }
   return {
     name: 'deepseek-api-plugin',

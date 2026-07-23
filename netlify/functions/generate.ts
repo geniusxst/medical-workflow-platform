@@ -172,8 +172,8 @@ export default async (req: Request): Promise<Response> => {
   let modelName = "deepseek-chat"
   if (provider === "siliconflow" || provider === "silicon") {
     apiBase = "https://api.siliconflow.cn/v1"
-    // 硅基流动上 DeepSeek 模型名带前缀；优先用环境变量自定义，否则默认 V3
-    modelName = process.env.API_MODEL || "deepseek-ai/DeepSeek-V3"
+    // 硅基流动上 DeepSeek 模型名带前缀；优先用环境变量自定义，否则默认 V4-Flash（最快，10秒内可完成）
+    modelName = process.env.API_MODEL || "deepseek-ai/DeepSeek-V4-Flash"
   }
 
   try {

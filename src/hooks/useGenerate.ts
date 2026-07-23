@@ -202,6 +202,9 @@ export function useGenerate() {
           ...(accessCode ? { 'X-Access-Code': accessCode } : {}),
         },
         body: JSON.stringify({ topic }),
+        // 30 秒超时：Netlify 免费版 Functions 有 10 秒硬限制，
+        // 但留足时间让可能的 502/504 错误返回，给出明确提示
+        signal: AbortSignal.timeout(30000),
       })
       if (response.status === 401) {
         throw new Error('访问口令错误或已失效，请重新输入口令')
