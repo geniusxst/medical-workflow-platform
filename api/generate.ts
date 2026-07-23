@@ -280,17 +280,18 @@ function jsonResponse(body: unknown, status = 200, req: Request): Response {
   })
 }
 
+// 关键：使用 Edge Runtime。
+// Vercel 默认 Node Runtime 传的是 Node IncomingMessage（req.headers 是普通对象，
+// 没有 .get() 方法），且对 Web 标准 ReadableStream 流式响应支持不完整，
+// 会导致 req.headers.get is not a function 崩溃。
+// Edge Runtime 完整支持 Request/Response/ReadableStream 等 Web 标准 API。
+// 注意：runtime 必须放在 config 对象里（export const runtime = 'edge' 是
+// Next.js 语法，在 Vercel Functions 中不生效）。
 export const config = {
-  // Vercel Hobby + Edge Runtime 最长 25s。
-  // DeepSeek-V3.2 实测 8-15s，足够覆盖；流式输出下数据持续流动不会因无活动被杀。
+  runtime: 'edge',
+  // Vercel Hobby + Edge Runtime 最长 25s。DeepSeek-V3.2 实测 8-15s，足够覆盖。
   maxDuration: 25,
 }
-
-// 关键：使用 Edge Runtime。
-// Vercel 默认 Node Runtime 对 Web 标准 ReadableStream 流式响应支持不完整，
-// 会导致函数崩溃返回 500。Edge Runtime 完整支持 Request/Response/ReadableStream
-// 等 Web 标准 API，是流式响应最可靠的运行时。
-export const runtime = 'edge'
 
 export default async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
