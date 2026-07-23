@@ -188,13 +188,24 @@ export function useGenerate() {
     setLoading(true)
     setError(null)
     try {
+      // 从 sessionStorage 读取访问口令
+      let accessCode = ''
+      try {
+        accessCode = sessionStorage.getItem('ythub_access_code') || ''
+      } catch {
+        // 忽略
+      }
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(accessCode ? { 'X-Access-Code': accessCode } : {}),
         },
         body: JSON.stringify({ topic }),
       })
+      if (response.status === 401) {
+        throw new Error('访问口令错误或已失效，请重新输入口令')
+      }
       if (!response.ok) {
         throw new Error(`请求失败: ${response.status}`)
       }

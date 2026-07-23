@@ -1,6 +1,8 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
+import { Lock } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import { useGenerate } from '@/hooks/useGenerate'
+import { useAccessCode } from '@/hooks/useAccessCode'
 import LeftPanel from '@/pages/console/LeftPanel'
 import MemoryCard from '@/pages/console/MemoryCard'
 import MemoryInfographic from '@/pages/console/MemoryInfographic'
@@ -10,6 +12,8 @@ import Distribution from '@/pages/console/Distribution'
 export default function ConsolePage() {
   const { showToast } = useToast()
   const { generate, loading, result } = useGenerate()
+  const { code, setCode } = useAccessCode()
+  const [codeInput, setCodeInput] = useState('')
   const miRef = useRef<HTMLElement>(null)
 
   const handleGenerate = async (topic: string) => {
@@ -32,6 +36,80 @@ export default function ConsolePage() {
       const message = err instanceof Error ? err.message : '生成失败'
       showToast(`生成失败：${message}`)
     }
+  }
+
+  // ===== 口令验证界面 =====
+  if (!code) {
+    return (
+      <main className="mx-auto pt-16 pb-12 px-6 flex flex-col items-center" style={{ maxWidth: '480px' }}>
+        <div
+          className="w-full rounded-2xl p-8 flex flex-col items-center gap-5"
+          style={{
+            backgroundColor: 'var(--card)',
+            border: '1px solid var(--border)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+          }}
+        >
+          <div
+            className="inline-flex items-center justify-center rounded-full"
+            style={{
+              width: '56px',
+              height: '56px',
+              backgroundColor: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+            }}
+          >
+            <Lock size={28} style={{ color: 'var(--primary)' }} />
+          </div>
+          <div className="text-center">
+            <h1 className="m-0 text-xl font-bold" style={{ color: 'var(--foreground)' }}>
+              需要访问口令
+            </h1>
+            <p className="mt-2 m-0 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+              本平台为私人工考工具，已开启口令保护，请输入口令后使用
+            </p>
+          </div>
+          <form
+            className="w-full flex flex-col gap-3"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const trimmed = codeInput.trim()
+              if (!trimmed) {
+                showToast('请输入口令')
+                return
+              }
+              setCode(trimmed)
+              setCodeInput('')
+              showToast('口令已设置，可以开始使用了')
+            }}
+          >
+            <input
+              type="password"
+              value={codeInput}
+              onChange={(e) => setCodeInput(e.target.value)}
+              placeholder="输入访问口令"
+              autoFocus
+              className="w-full rounded-lg px-4 py-3 text-base outline-none"
+              style={{
+                backgroundColor: 'var(--background)',
+                border: '1.5px solid var(--border)',
+                color: 'var(--foreground)',
+              }}
+            />
+            <button
+              type="submit"
+              className="w-full rounded-lg px-4 py-3 text-base font-semibold"
+              style={{
+                backgroundColor: 'var(--primary)',
+                color: 'var(--primary-foreground)',
+                cursor: 'pointer',
+              }}
+            >
+              进入工作台
+            </button>
+          </form>
+        </div>
+      </main>
+    )
   }
 
   return (

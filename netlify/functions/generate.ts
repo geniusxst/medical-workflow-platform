@@ -117,32 +117,52 @@ JSON 顶层结构示例（必须严格按此字段结构填充）：
 ${examKnowledge}
 `
 
-const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json",
+// CORS 白名单：只允许自己的站点调用，防止被第三方网站薅 API
+const ALLOWED_ORIGINS = [
+  "https://medical-workflow-platform.netlify.app",
+  "http://localhost:5173",
+  "http://localhost:4173",
+]
+
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("Origin") || ""
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Headers": "Content-Type, X-Access-Code",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Content-Type": "application/json",
+  }
 }
 
-function jsonResponse(body: unknown, status = 200): Response {
+function jsonResponse(body: unknown, status = 200, req: Request): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: CORS_HEADERS,
+    headers: getCorsHeaders(req),
   })
 }
 
 export default async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS })
+    return new Response(null, { status: 204, headers: getCorsHeaders(req) })
   }
 
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method Not Allowed" }, 405)
+    return jsonResponse({ error: "Method Not Allowed" }, 405, req)
+  }
+
+  // ===== 访问口令校验：防止未授权调用薅掉 API 额度 =====
+  const accessCode = process.env.ACCESS_CODE
+  if (accessCode) {
+    const provided = req.headers.get("X-Access-Code") || ""
+    if (provided !== accessCode) {
+      return jsonResponse({ error: "未授权访问：口令错误或缺失" }, 401, req)
+    }
   }
 
   const apiKey = process.env.DEEPSEEK_API_KEY
   if (!apiKey) {
-    return jsonResponse({ error: "DEEPSEEK_API_KEY 环境变量未配置" }, 500)
+    return jsonResponse({ error: "DEEPSEEK_API_KEY 环境变量未配置" }, 500, req)
   }
 
   try {
@@ -150,7 +170,7 @@ export default async (req: Request): Promise<Response> => {
     const topic = body.topic?.trim()
 
     if (!topic) {
-      return jsonResponse({ error: "缺少 topic 参数" }, 400)
+      return jsonResponse({ error: "缺少 topic 参数" }, 400, req)
     }
 
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
@@ -172,28 +192,28 @@ export default async (req: Request): Promise<Response> => {
 
     if (!response.ok) {
       const errorText = await response.text()
-      return jsonResponse({ error: `DeepSeek API 错误: ${errorText}` }, response.status)
+      return jsonResponse({ error: `DeepSeek API 错误: ${errorText}` }, response.status, req)
     }
 
     const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
     const content = data.choices?.[0]?.message?.content
 
     if (!content) {
-      return jsonResponse({ error: "API 返回内容为空" }, 500)
+      return jsonResponse({ error: "API 返回内容为空" }, 500, req)
     }
 
     let result: GeneratedResult
     try {
       result = JSON.parse(content) as GeneratedResult
     } catch {
-      return jsonResponse({ error: "解析 JSON 失败", raw: content }, 500)
+      return jsonResponse({ error: "解析 JSON 失败", raw: content }, 500, req)
     }
 
-    return jsonResponse(result, 200)
+    return jsonResponse(result, 200, req)
   } catch (error) {
     return jsonResponse({
       error: "服务器内部错误",
       message: error instanceof Error ? error.message : String(error),
-    }, 500)
+    }, 500, req)
   }
 }
