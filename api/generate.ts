@@ -262,58 +262,77 @@ function isAllowedOrigin(origin: string): boolean {
   )
 }
 
-function getCorsHeaders(req: Request): Record<string, string> {
-  const origin = req.headers.get("Origin") || ""
+// Vercel Node Runtime 标准 handler 签名。
+// 用内联类型定义，避免依赖 @vercel/node 类型包（可能导致构建失败）。
+type NodeReq = {
+  method?: string
+  headers: Record<string, string | string[] | undefined>
+  body: unknown
+}
+type NodeRes = {
+  setHeader: (k: string, v: string) => void
+  status: (code: number) => NodeRes
+  end: (data?: string) => void
+  write: (data: string | Buffer) => void
+}
+
+function getOrigin(req: NodeReq): string {
+  const h = req.headers
+  // headers 可能是 string 或 string[]，取第一个
+  const o = h["origin"] || h["Origin"]
+  return Array.isArray(o) ? o[0] || "" : o || ""
+}
+
+function applyCors(req: NodeReq, res: NodeRes): string {
+  const origin = getOrigin(req)
   const allowed = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGIN_PATTERNS[0] as string
-  return {
-    "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Headers": "Content-Type, X-Access-Code",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Content-Type": "application/json",
-  }
+  res.setHeader("Access-Control-Allow-Origin", allowed)
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Access-Code")
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
+  return allowed
 }
 
-function jsonResponse(body: unknown, status = 200, req: Request): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: getCorsHeaders(req),
-  })
+function jsonError(req: NodeReq, res: NodeRes, status: number, body: unknown): void {
+  applyCors(req, res)
+  res.setHeader("Content-Type", "application/json; charset=utf-8")
+  res.status(status).end(JSON.stringify(body))
 }
 
-// 关键：使用 Edge Runtime。
-// Vercel 默认 Node Runtime 传的是 Node IncomingMessage（req.headers 是普通对象，
-// 没有 .get() 方法），且对 Web 标准 ReadableStream 流式响应支持不完整，
-// 会导致 req.headers.get is not a function 崩溃。
-// Edge Runtime 完整支持 Request/Response/ReadableStream 等 Web 标准 API。
-// 注意：runtime 必须放在 config 对象里（export const runtime = 'edge' 是
-// Next.js 语法，在 Vercel Functions 中不生效）。
+// Vercel Hobby + Node Runtime 最长 60s（远超 Netlify 免费版 10s）。
+// 不使用 Edge Runtime（会导致部署失败）。Node Runtime 用 res.write() 流式输出，
+// Vercel 原生支持，数据持续流动不会因无活动被杀。
 export const config = {
-  runtime: 'edge',
-  // Vercel Hobby + Edge Runtime 最长 25s。DeepSeek-V3.2 实测 8-15s，足够覆盖。
-  maxDuration: 25,
+  maxDuration: 60,
 }
 
-export default async (req: Request): Promise<Response> => {
+export default async (req: NodeReq, res: NodeRes): Promise<void> => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: getCorsHeaders(req) })
+    applyCors(req, res)
+    res.status(204).end()
+    return
   }
 
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method Not Allowed" }, 405, req)
+    jsonError(req, res, 405, { error: "Method Not Allowed" })
+    return
   }
 
   // ===== 访问口令校验：防止未授权调用薅掉 API 额度 =====
   const accessCode = process.env.ACCESS_CODE
   if (accessCode) {
-    const provided = req.headers.get("X-Access-Code") || ""
+    const h = req.headers
+    const raw = h["x-access-code"] || h["X-Access-Code"]
+    const provided = Array.isArray(raw) ? raw[0] || "" : raw || ""
     if (provided !== accessCode) {
-      return jsonResponse({ error: "未授权访问：口令错误或缺失" }, 401, req)
+      jsonError(req, res, 401, { error: "未授权访问：口令错误或缺失" })
+      return
     }
   }
 
   const apiKey = process.env.DEEPSEEK_API_KEY
   if (!apiKey) {
-    return jsonResponse({ error: "DEEPSEEK_API_KEY 环境变量未配置" }, 500, req)
+    jsonError(req, res, 500, { error: "DEEPSEEK_API_KEY 环境变量未配置" })
+    return
   }
 
   // ===== API 提供商配置（支持 DeepSeek 官方 / 硅基流动，通过环境变量切换）=====
@@ -328,11 +347,13 @@ export default async (req: Request): Promise<Response> => {
   }
 
   try {
-    const body = (await req.json()) as { topic?: string }
+    // Vercel Node Runtime 会自动解析 JSON body 到 req.body
+    const body = (req.body || {}) as { topic?: string }
     const topic = body.topic?.trim()
 
     if (!topic) {
-      return jsonResponse({ error: "缺少 topic 参数" }, 400, req)
+      jsonError(req, res, 400, { error: "缺少 topic 参数" })
+      return
     }
 
     // SiliconFlow 的 GLM 系列不支持 response_format json_object（会报 code 20024），
@@ -346,7 +367,6 @@ export default async (req: Request): Promise<Response> => {
       ],
       temperature: 0.3,
       // 流式输出：让 AI 边生成边推数据，保持数据持续流动。
-      // 配合 Vercel 60s 函数超时，稳妥完成生成。
       stream: true,
     }
     if (supportsJsonMode) {
@@ -364,69 +384,64 @@ export default async (req: Request): Promise<Response> => {
 
     if (!response.ok) {
       const errorText = await response.text()
-      return jsonResponse({ error: `DeepSeek API 错误: ${errorText}` }, response.status, req)
+      jsonError(req, res, response.status, { error: `DeepSeek API 错误: ${errorText}` })
+      return
     }
 
     if (!response.body) {
-      return jsonResponse({ error: "API 返回空流" }, 500, req)
+      jsonError(req, res, 500, { error: "API 返回空流" })
+      return
     }
 
-    // 流式转发：解析上游 SSE（data: {json}），提取 delta.content，纯文本推给前端。
+    // 流式转发：用 res.write() 持续推送，Vercel Node Runtime 原生支持流式响应。
+    // 解析上游 SSE（data: {json}），提取 delta.content，纯文本推给前端。
     // 前端读取完整文本后再 JSON.parse（容错由前端 extractJson 处理）。
+    applyCors(req, res)
+    res.setHeader("Content-Type", "text/plain; charset=utf-8")
+    res.setHeader("Cache-Control", "no-cache")
+    res.status(200)
+
     const upstreamReader = response.body.getReader()
     const decoder = new TextDecoder()
-    const encoder = new TextEncoder()
     let sseBuffer = ""
 
-    const stream = new ReadableStream({
-      async pull(controller) {
-        try {
-          const { done, value } = await upstreamReader.read()
-          if (done) {
-            controller.close()
+    try {
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await upstreamReader.read()
+        if (done) break
+        sseBuffer += decoder.decode(value, { stream: true })
+        // SSE 按行切分，最后不完整的行留在 buffer
+        const lines = sseBuffer.split("\n")
+        sseBuffer = lines.pop() || ""
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed.startsWith("data:")) continue
+          const payload = trimmed.slice(5).trim()
+          if (payload === "[DONE]") {
+            res.end()
             return
           }
-          sseBuffer += decoder.decode(value, { stream: true })
-          // SSE 按行切分，最后不完整的行留在 buffer
-          const lines = sseBuffer.split("\n")
-          sseBuffer = lines.pop() || ""
-          for (const line of lines) {
-            const trimmed = line.trim()
-            if (!trimmed.startsWith("data:")) continue
-            const payload = trimmed.slice(5).trim()
-            if (payload === "[DONE]") {
-              controller.close()
-              return
-            }
-            try {
-              const chunk = JSON.parse(payload) as { choices?: Array<{ delta?: { content?: string } }> }
-              const text = chunk.choices?.[0]?.delta?.content
-              if (text) controller.enqueue(encoder.encode(text))
-            } catch {
-              // 跳过无法解析的 SSE 行
-            }
+          try {
+            const chunk = JSON.parse(payload) as { choices?: Array<{ delta?: { content?: string } }> }
+            const text = chunk.choices?.[0]?.delta?.content
+            if (text) res.write(text)
+          } catch {
+            // 跳过无法解析的 SSE 行
           }
-        } catch (err) {
-          controller.error(err)
         }
-      },
-      cancel() {
-        upstreamReader.cancel().catch(() => {})
-      },
-    })
-
-    return new Response(stream, {
-      status: 200,
-      headers: {
-        ...getCorsHeaders(req),
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-cache",
-      },
-    })
+      }
+      res.end()
+    } catch (err) {
+      // 流中途出错，尽量把已有数据 flush 出去再结束
+      try { res.end() } catch { /* 忽略 */ }
+      // 错误已无法通过 HTTP 状态码返回（已 200），记录日志即可
+      console.error("流式输出失败:", err instanceof Error ? err.message : String(err))
+    }
   } catch (error) {
-    return jsonResponse({
+    jsonError(req, res, 500, {
       error: "服务器内部错误",
       message: error instanceof Error ? error.message : String(error),
-    }, 500, req)
+    })
   }
 }
