@@ -198,7 +198,8 @@ export default async (req: Request): Promise<Response> => {
           { role: "user", content: topic },
         ],
         temperature: 0.3,
-        response_format: { type: "json_object" },
+        // 注意：GLM-4.5-Air 等部分硅基流动模型不支持 response_format json_object
+        // 改为通过 system prompt 强制要求 JSON 输出
       }),
     })
 
@@ -208,17 +209,31 @@ export default async (req: Request): Promise<Response> => {
     }
 
     const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
-    const content = data.choices?.[0]?.message?.content
+    let content = data.choices?.[0]?.message?.content || ""
 
     if (!content) {
       return jsonResponse({ error: "API 返回内容为空" }, 500, req)
+    }
+
+    // 去掉 JSON 模式后，AI 可能在输出前后带 markdown 标记或多余文字，需清理
+    content = content.trim()
+    // 剥离 ```json ... ``` 或 ``` ... ``` 包裹
+    const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
+    if (fenceMatch) {
+      content = fenceMatch[1].trim()
+    }
+    // 提取第一个 { 到最后一个 } 之间的内容（防止前后有解释文字）
+    const firstBrace = content.indexOf("{")
+    const lastBrace = content.lastIndexOf("}")
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      content = content.slice(firstBrace, lastBrace + 1)
     }
 
     let result: GeneratedResult
     try {
       result = JSON.parse(content) as GeneratedResult
     } catch {
-      return jsonResponse({ error: "解析 JSON 失败", raw: content }, 500, req)
+      return jsonResponse({ error: "解析 JSON 失败", raw: content.slice(0, 500) }, 500, req)
     }
 
     return jsonResponse(result, 200, req)

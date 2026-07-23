@@ -149,7 +149,7 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
                   { role: 'user', content: topic },
                 ],
                 temperature: 0.3,
-                response_format: { type: 'json_object' },
+                // GLM-4.5-Air 等模型不支持 response_format，改用 prompt 约束
               }),
             })
 
@@ -161,12 +161,24 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
             }
 
             const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
-            const content = data.choices?.[0]?.message?.content
+            let content = data.choices?.[0]?.message?.content || ''
 
             if (!content) {
               res.statusCode = 500
               res.end(JSON.stringify({ error: 'API 返回内容为空' }))
               return
+            }
+
+            // 清理可能的 markdown 包裹和多余文字
+            content = content.trim()
+            const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
+            if (fenceMatch) {
+              content = fenceMatch[1].trim()
+            }
+            const firstBrace = content.indexOf('{')
+            const lastBrace = content.lastIndexOf('}')
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              content = content.slice(firstBrace, lastBrace + 1)
             }
 
             res.statusCode = 200
