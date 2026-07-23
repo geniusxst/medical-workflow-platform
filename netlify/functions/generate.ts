@@ -60,6 +60,14 @@ const SYSTEM_PROMPT = `你是一位资深的中西医执业医师考试辅导专
 
 请直接返回JSON，不要有任何额外文字或markdown格式标记。
 
+【极其重要·精简原则】为避免超时，所有字段都要精简：
+- 每个字符串字段控制在30字以内，能用短句不要用长句
+- syndromes/formulaRows 证型名+方剂名即可，symptom 抓主症4-8字
+- westernTreatment 每条10-15字
+- differentialRows 的 symptom 和 key 各15字以内
+- treatmentCards 的 desc 15字以内
+- 不要输出任何注释、解释、说明文字，只输出JSON本身
+
 【极其重要】所有数组元素必须是"对象"或"字符串"按下方示例的结构，绝对不能把对象数组退化成字符串数组。具体要求：
 - syndromes、formulaRows、differentialRows、treatmentCards、compliance 必须是「对象数组」，每个元素都是带固定字段的对象（绝不能只写证型名字符串）
 - diagnosisPoints、westernTreatment、coreSymptoms 必须是「字符串数组」，每个元素都是字符串
@@ -198,6 +206,7 @@ export default async (req: Request): Promise<Response> => {
           { role: "user", content: topic },
         ],
         temperature: 0.3,
+        max_tokens: 4000,
         // 注意：GLM-4.5-Air 等部分硅基流动模型不支持 response_format json_object
         // 改为通过 system prompt 强制要求 JSON 输出
       }),
