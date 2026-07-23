@@ -121,6 +121,30 @@ function buildSystemPrompt(topic: string): string {
   return SYSTEM_PROMPT_HEAD + findRelevantKnowledge(topic)
 }
 
+/**
+ * 从模型输出里提取 JSON 字符串。
+ * GLM 等不支持 json mode 的模型可能把 JSON 包在 ```json ... ``` 里，
+ * 或前后带解释性文字。这里依次尝试：直接 parse → 去代码块 → 截取首尾大括号。
+ */
+function extractJson(content: string): string {
+  const trimmed = content.trim()
+  // 1. 直接是合法 JSON
+  try { JSON.parse(trimmed); return trimmed } catch { /* 继续兜底 */ }
+  // 2. 去掉 ```json ... ``` 或 ``` ... ``` 包裹
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  if (fenceMatch) {
+    const inner = fenceMatch[1].trim()
+    try { JSON.parse(inner); return inner } catch { /* 继续兜底 */ }
+  }
+  // 3. 截取第一个 { 到最后一个 }
+  const first = trimmed.indexOf('{')
+  const last = trimmed.lastIndexOf('}')
+  if (first !== -1 && last > first) {
+    return trimmed.slice(first, last + 1)
+  }
+  return trimmed
+}
+
 // CORS 白名单：只允许自己的站点调用，防止被第三方网站薅 API
 const ALLOWED_ORIGINS = [
   "https://medical-workflow-platform.netlify.app",
@@ -189,21 +213,28 @@ export default async (req: Request): Promise<Response> => {
       return jsonResponse({ error: "缺少 topic 参数" }, 400, req)
     }
 
+    // SiliconFlow 的 GLM 系列不支持 response_format json_object（会报 code 20024），
+    // 只有 DeepSeek 官方接口能开 JSON mode。不支持的提供商改为靠 prompt 约束 + 解析容错。
+    const supportsJsonMode = provider === "deepseek"
+    const requestBody: Record<string, unknown> = {
+      model: modelName,
+      messages: [
+        { role: "system", content: buildSystemPrompt(topic) },
+        { role: "user", content: topic },
+      ],
+      temperature: 0.3,
+    }
+    if (supportsJsonMode) {
+      requestBody.response_format = { type: "json_object" }
+    }
+
     const response = await fetch(`${apiBase}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          { role: "system", content: buildSystemPrompt(topic) },
-          { role: "user", content: topic },
-        ],
-        temperature: 0.3,
-        response_format: { type: "json_object" },
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     if (!response.ok) {
@@ -220,7 +251,7 @@ export default async (req: Request): Promise<Response> => {
 
     let result: GeneratedResult
     try {
-      result = JSON.parse(content) as GeneratedResult
+      result = JSON.parse(extractJson(content)) as GeneratedResult
     } catch {
       return jsonResponse({ error: "解析 JSON 失败", raw: content }, 500, req)
     }

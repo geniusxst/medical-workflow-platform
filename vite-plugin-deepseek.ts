@@ -96,6 +96,27 @@ function buildSystemPrompt(topic: string): string {
   return SYSTEM_PROMPT_HEAD + findRelevantKnowledge(topic)
 }
 
+/**
+ * 从模型输出里提取 JSON 字符串。
+ * GLM 等不支持 json mode 的模型可能把 JSON 包在 ```json ... ``` 里，
+ * 或前后带解释性文字。这里依次尝试：直接 parse → 去代码块 → 截取首尾大括号。
+ */
+function extractJson(content: string): string {
+  const trimmed = content.trim()
+  try { JSON.parse(trimmed); return trimmed } catch { /* 继续兜底 */ }
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  if (fenceMatch) {
+    const inner = fenceMatch[1].trim()
+    try { JSON.parse(inner); return inner } catch { /* 继续兜底 */ }
+  }
+  const first = trimmed.indexOf('{')
+  const last = trimmed.lastIndexOf('}')
+  if (first !== -1 && last > first) {
+    return trimmed.slice(first, last + 1)
+  }
+  return trimmed
+}
+
 export function deepseekApiPlugin(apiKey: string): Plugin {
   // 本地开发同样支持通过环境变量切换 DeepSeek 官方 / 硅基流动
   const provider = (process.env.API_PROVIDER || 'deepseek').toLowerCase()
@@ -139,21 +160,28 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
               return
             }
 
+            // SiliconFlow 的 GLM 系列不支持 response_format json_object（会报 code 20024），
+            // 只有 DeepSeek 官方接口能开 JSON mode。不支持的提供商靠 prompt 约束 + 解析容错。
+            const supportsJsonMode = provider === 'deepseek'
+            const requestBody: Record<string, unknown> = {
+              model: modelName,
+              messages: [
+                { role: 'system', content: buildSystemPrompt(topic) },
+                { role: 'user', content: topic },
+              ],
+              temperature: 0.3,
+            }
+            if (supportsJsonMode) {
+              requestBody.response_format = { type: 'json_object' }
+            }
+
             const response = await fetch(`${apiBase}/chat/completions`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`,
               },
-              body: JSON.stringify({
-                model: modelName,
-                messages: [
-                  { role: 'system', content: buildSystemPrompt(topic) },
-                  { role: 'user', content: topic },
-                ],
-                temperature: 0.3,
-                response_format: { type: 'json_object' },
-              }),
+              body: JSON.stringify(requestBody),
             })
 
             if (!response.ok) {
@@ -172,8 +200,15 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
               return
             }
 
-            res.statusCode = 200
-            res.end(content)
+            // 解析 + 容错提取 JSON（GLM 不开 json mode 时可能带 ```json 包裹）
+            try {
+              const parsed = JSON.parse(extractJson(content))
+              res.statusCode = 200
+              res.end(JSON.stringify(parsed))
+            } catch {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: '解析 JSON 失败', raw: content }))
+            }
           } catch (err) {
             res.statusCode = 500
             res.end(JSON.stringify({
