@@ -103,9 +103,8 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
   let modelName = 'deepseek-chat'
   if (provider === 'siliconflow' || provider === 'silicon') {
     apiBase = 'https://api.siliconflow.cn/v1'
-    // 与生产端 generate.ts 保持一致：默认 GLM-4.5-Air（秒杀词质量好），
-    // 配合流式输出避免 504。本地可通过 API_MODEL 覆盖。
-    modelName = process.env.API_MODEL || 'zai-org/GLM-4.5-Air'
+    // 与生产端 generate.ts 保持一致：默认 DeepSeek-V3.2（免费代金券覆盖，快且 JSON 遵从度好）。
+    modelName = process.env.API_MODEL || 'deepseek-ai/DeepSeek-V3.2'
   }
   return {
     name: 'deepseek-api-plugin',
