@@ -162,8 +162,9 @@ function jsonResponse(body: unknown, status = 200, req: Request): Response {
 }
 
 export const config = {
-  // Vercel Hobby 流式函数最长 60s（远超 Netlify 免费版 10s），覆盖 V3.2 的 8-15s 生成。
-  maxDuration: 60,
+  // Vercel Hobby + Edge Runtime 最长 25s。
+  // DeepSeek-V3.2 实测 8-15s，足够覆盖；流式输出下数据持续流动不会因无活动被杀。
+  maxDuration: 25,
 }
 
 // 关键：使用 Edge Runtime。
