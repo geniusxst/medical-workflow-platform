@@ -200,9 +200,10 @@ export default async (req: Request): Promise<Response> => {
   let modelName = "deepseek-chat"
   if (provider === "siliconflow" || provider === "silicon") {
     apiBase = "https://api.siliconflow.cn/v1"
-    // 硅基流动：默认 GLM-4.5-Air（响应最快 ~0.4s，适合文字 JSON 生成，10秒内可完成）
+    // 硅基流动：默认 DeepSeek-V4-Flash（最快，10秒内可完成，避免 Netlify 30s 网关超时）
+    // 注意：GLM-4.5-Air 实测 28-31s，会间歇性触发 504，不要作为默认模型
     // 可通过 API_MODEL 环境变量切换其他模型
-    modelName = process.env.API_MODEL || "zai-org/GLM-4.5-Air"
+    modelName = process.env.API_MODEL || "deepseek-ai/DeepSeek-V4-Flash"
   }
 
   try {

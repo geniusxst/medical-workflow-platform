@@ -124,7 +124,8 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
   let modelName = 'deepseek-chat'
   if (provider === 'siliconflow' || provider === 'silicon') {
     apiBase = 'https://api.siliconflow.cn/v1'
-    modelName = process.env.API_MODEL || 'zai-org/GLM-4.5-Air'
+    // 默认 DeepSeek-V4-Flash（最快），GLM-4.5-Air 实测 28-31s 会触发 504
+    modelName = process.env.API_MODEL || 'deepseek-ai/DeepSeek-V4-Flash'
   }
   return {
     name: 'deepseek-api-plugin',
