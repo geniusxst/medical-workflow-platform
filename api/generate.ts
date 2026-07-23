@@ -393,17 +393,15 @@ export default async (req: NodeReq, res: NodeRes): Promise<void> => {
       return
     }
 
-    // 流式转发：用 res.write() 持续推送，Vercel Node Runtime 原生支持流式响应。
-    // 解析上游 SSE（data: {json}），提取 delta.content，纯文本推给前端。
-    // 前端读取完整文本后再 JSON.parse（容错由前端 extractJson 处理）。
-    applyCors(req, res)
-    res.setHeader("Content-Type", "text/plain; charset=utf-8")
-    res.setHeader("Cache-Control", "no-cache")
-    res.status(200)
-
+    // 完整收集 AI 流式输出，校验为合法 JSON 后一次性返回给前端。
+    // 之前用 res.write() 边收边推，但 AI 输出可能带 ```json 包裹或前后
+    // 解释文字，前端 extractJson 容错不够鲁棒导致"生成内容解析失败"。
+    // Vercel Node Runtime 有 60s 超时，DeepSeek-V3.2 只要 8-15s，足够
+    // 先完整收集再返回，换取 100% 可靠的 JSON。
     const upstreamReader = response.body.getReader()
     const decoder = new TextDecoder()
     let sseBuffer = ""
+    let fullContent = ""
 
     try {
       // eslint-disable-next-line no-constant-condition
@@ -418,26 +416,43 @@ export default async (req: NodeReq, res: NodeRes): Promise<void> => {
           const trimmed = line.trim()
           if (!trimmed.startsWith("data:")) continue
           const payload = trimmed.slice(5).trim()
-          if (payload === "[DONE]") {
-            res.end()
-            return
-          }
+          if (payload === "[DONE]") continue
           try {
             const chunk = JSON.parse(payload) as { choices?: Array<{ delta?: { content?: string } }> }
             const text = chunk.choices?.[0]?.delta?.content
-            if (text) res.write(text)
+            if (text) fullContent += text
           } catch {
             // 跳过无法解析的 SSE 行
           }
         }
       }
-      res.end()
     } catch (err) {
-      // 流中途出错，尽量把已有数据 flush 出去再结束
-      try { res.end() } catch { /* 忽略 */ }
-      // 错误已无法通过 HTTP 状态码返回（已 200），记录日志即可
-      console.error("流式输出失败:", err instanceof Error ? err.message : String(err))
+      console.error("读取上游流失败:", err instanceof Error ? err.message : String(err))
+      jsonError(req, res, 500, { error: "读取 AI 响应失败" })
+      return
     }
+
+    // 后端做一次 JSON 容错清洗，确保推给前端的是合法 JSON。
+    // 前端 useGenerate.ts 也有 extractJson，但后端清洗一遍更稳。
+    const cleaned = extractJson(fullContent)
+
+    // 校验清洗后的内容确实是合法 JSON
+    try {
+      JSON.parse(cleaned)
+    } catch {
+      // 连后端都解析不了，说明 AI 输出严重异常
+      jsonError(req, res, 500, {
+        error: "AI 输出格式异常，请重试",
+        // 把原始内容的前 500 字附上，方便排查（生产环境可考虑去掉）
+        raw: fullContent.slice(0, 500),
+      })
+      return
+    }
+
+    // 返回 application/json，前端用 response.json() 直接解析
+    applyCors(req, res)
+    res.setHeader("Content-Type", "application/json; charset=utf-8")
+    res.status(200).end(cleaned)
   } catch (error) {
     jsonError(req, res, 500, {
       error: "服务器内部错误",

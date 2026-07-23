@@ -246,30 +246,14 @@ export function useGenerate() {
         throw new Error(detail)
       }
 
-      // 后端以 text/plain 流式返回 AI 原始输出（可能带 ```json 包裹）。
-      // 这里增量读取完整文本，再通过 extractJson 容错解析为对象。
-      // 同时兼容本地开发中间件返回的 application/json（text() 同样能拿到 JSON 字符串）。
-      const reader = response.body?.getReader()
-      let content = ''
-      if (reader) {
-        const decoder = new TextDecoder()
-        // 循环读取流，直到上游关闭。流式数据持续到达，fetch 不会因无活动超时。
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          content += decoder.decode(value, { stream: true })
-        }
-        // flush decoder（处理多字节字符跨 chunk 的情况）
-        content += decoder.decode()
-      } else {
-        // 没有 body 流（理论上不会发生），退回一次性读取
-        content = await response.text()
-      }
-
+      // 后端已改为完整收集 AI 输出并清洗为合法 JSON 后一次性返回
+      // （application/json）。前端直接用 response.json() 解析即可。
+      // Vercel Node Runtime 60s 超时足够覆盖 DeepSeek-V3.2 的 8-15s 生成。
+      // 同时兼容本地开发中间件（vite-plugin-deepseek.ts）的非流式 JSON 响应。
       let raw: unknown
       try {
-        raw = JSON.parse(extractJson(content))
+        const text = await response.text()
+        raw = JSON.parse(extractJson(text))
       } catch {
         throw new Error('生成内容解析失败，请重试')
       }

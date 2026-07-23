@@ -182,11 +182,12 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
               return
             }
 
-            // 流式转发：解析上游 SSE（data: {json}），提取 delta.content，
-            // 纯文本 write 给前端。与生产端 ReadableStream 实现等价。
+            // 完整收集 AI 流式输出，清洗为合法 JSON 后一次性返回。
+            // 与生产端 api/generate.ts 逻辑一致，保证前端解析可靠。
             const upstreamReader = response.body.getReader()
             const decoder = new TextDecoder()
             let sseBuffer = ''
+            let fullContent = ''
 
             // eslint-disable-next-line no-constant-condition
             while (true) {
@@ -199,14 +200,11 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
                 const trimmed = line.trim()
                 if (!trimmed.startsWith('data:')) continue
                 const payload = trimmed.slice(5).trim()
-                if (payload === '[DONE]') {
-                  res.end()
-                  return
-                }
+                if (payload === '[DONE]') continue
                 try {
                   const chunk = JSON.parse(payload) as { choices?: Array<{ delta?: { content?: string } }> }
                   const text = chunk.choices?.[0]?.delta?.content
-                  if (text) res.write(text)
+                  if (text) fullContent += text
                 } catch {
                   // 跳过无法解析的 SSE 行
                 }
@@ -214,18 +212,33 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
             }
             // flush decoder（多字节字符跨 chunk）
             sseBuffer += decoder.decode()
-            // 处理缓冲区里剩余的行（非 [DONE] 结束的情况）
             if (sseBuffer.trim().startsWith('data:')) {
               const payload = sseBuffer.trim().slice(5).trim()
               if (payload && payload !== '[DONE]') {
                 try {
                   const chunk = JSON.parse(payload) as { choices?: Array<{ delta?: { content?: string } }> }
                   const text = chunk.choices?.[0]?.delta?.content
-                  if (text) res.write(text)
+                  if (text) fullContent += text
                 } catch { /* 忽略 */ }
               }
             }
-            res.end()
+
+            // 清洗为合法 JSON
+            const cleaned = extractJson(fullContent)
+            try {
+              JSON.parse(cleaned)
+            } catch {
+              res.statusCode = 500
+              res.end(JSON.stringify({
+                error: 'AI 输出格式异常，请重试',
+                raw: fullContent.slice(0, 500),
+              }))
+              return
+            }
+
+            res.setHeader('Content-Type', 'application/json; charset=utf-8')
+            res.statusCode = 200
+            res.end(cleaned)
           } catch (err) {
             if (!res.headersSent) {
               res.statusCode = 500
