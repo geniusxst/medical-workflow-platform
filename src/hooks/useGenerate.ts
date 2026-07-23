@@ -11,6 +11,31 @@ import { defaultResult } from '@/data/defaultResult'
 
 const HISTORY_KEY = 'ythub_generation_history'
 
+/**
+ * 从模型输出里提取 JSON 字符串。
+ * 生产端 SiliconFlow GLM 不支持 json mode，会把 JSON 包在 ```json ... ``` 里，
+ * 或前后带解释性文字。这里依次尝试：直接 parse → 去代码块 → 截取首尾大括号。
+ * 与后端 netlify/functions/generate.ts 中的 extractJson 保持一致。
+ */
+function extractJson(content: string): string {
+  const trimmed = content.trim()
+  // 1. 直接是合法 JSON
+  try { JSON.parse(trimmed); return trimmed } catch { /* 继续兜底 */ }
+  // 2. 去掉 ```json ... ``` 或 ``` ... ``` 包裹
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  if (fenceMatch) {
+    const inner = fenceMatch[1].trim()
+    try { JSON.parse(inner); return inner } catch { /* 继续兜底 */ }
+  }
+  // 3. 截取第一个 { 到最后一个 }
+  const first = trimmed.indexOf('{')
+  const last = trimmed.lastIndexOf('}')
+  if (first !== -1 && last > first) {
+    return trimmed.slice(first, last + 1)
+  }
+  return trimmed
+}
+
 function appendToHistory(record: {
   topic: string
   title: string
@@ -202,17 +227,59 @@ export function useGenerate() {
           ...(accessCode ? { 'X-Access-Code': accessCode } : {}),
         },
         body: JSON.stringify({ topic }),
-        // 30 秒超时：Netlify 免费版 Functions 有 10 秒硬限制，
-        // 但留足时间让可能的 502/504 错误返回，给出明确提示
-        signal: AbortSignal.timeout(30000),
+        // 流式输出下数据持续流动，不会触发 Netlify 网关 30s Inactivity Timeout。
+        // 这里给 120s 总超时，覆盖 GLM-4.5-Air 实测 28-31s 的完整生成时间，
+        // 避免 30s 过紧导致生成接近完成时被前端中断。
+        signal: AbortSignal.timeout(120000),
       })
       if (response.status === 401) {
         throw new Error('访问口令错误或已失效，请重新输入口令')
       }
       if (!response.ok) {
-        throw new Error(`请求失败: ${response.status}`)
+        // 非 2xx：后端通常返回 JSON 错误对象，尝试解析给出明确提示
+        let detail = `请求失败: ${response.status}`
+        try {
+          const errText = await response.text()
+          const errObj = JSON.parse(extractJson(errText))
+          if (errObj?.error) detail = errObj.error
+        } catch { /* 忽略解析失败，沿用 status 提示 */ }
+        throw new Error(detail)
       }
-      const raw = await response.json()
+
+      // 后端以 text/plain 流式返回 AI 原始输出（可能带 ```json 包裹）。
+      // 这里增量读取完整文本，再通过 extractJson 容错解析为对象。
+      // 同时兼容本地开发中间件返回的 application/json（text() 同样能拿到 JSON 字符串）。
+      const reader = response.body?.getReader()
+      let content = ''
+      if (reader) {
+        const decoder = new TextDecoder()
+        // 循环读取流，直到上游关闭。流式数据持续到达，fetch 不会因无活动超时。
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          content += decoder.decode(value, { stream: true })
+        }
+        // flush decoder（处理多字节字符跨 chunk 的情况）
+        content += decoder.decode()
+      } else {
+        // 没有 body 流（理论上不会发生），退回一次性读取
+        content = await response.text()
+      }
+
+      let raw: unknown
+      try {
+        raw = JSON.parse(extractJson(content))
+      } catch {
+        throw new Error('生成内容解析失败，请重试')
+      }
+
+      // 若后端返回的是错误对象（如 { error: "..." }），向上抛出
+      const errObj = raw as Record<string, unknown> | null
+      if (errObj && typeof errObj === 'object' && errObj.error && !errObj.memoryCard) {
+        throw new Error(String(errObj.error))
+      }
+
       // 关键：兜底规范化，防止 AI 返回的数组结构异常导致前端空白
       const data = normalizeResult(raw)
       setResult(data)

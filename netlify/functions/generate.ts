@@ -200,10 +200,9 @@ export default async (req: Request): Promise<Response> => {
   let modelName = "deepseek-chat"
   if (provider === "siliconflow" || provider === "silicon") {
     apiBase = "https://api.siliconflow.cn/v1"
-    // 硅基流动：默认 DeepSeek-V4-Flash（最快，10秒内可完成，避免 Netlify 30s 网关超时）
-    // 注意：GLM-4.5-Air 实测 28-31s，会间歇性触发 504，不要作为默认模型
-    // 可通过 API_MODEL 环境变量切换其他模型
-    modelName = process.env.API_MODEL || "deepseek-ai/DeepSeek-V4-Flash"
+    // 硅基流动：默认 GLM-4.5-Air（带秒杀词质量好），实测生成 28-31s
+    // 配合流式输出避免 Netlify 30s 网关 Inactivity Timeout
+    modelName = process.env.API_MODEL || "zai-org/GLM-4.5-Air"
   }
 
   try {
@@ -224,6 +223,9 @@ export default async (req: Request): Promise<Response> => {
         { role: "user", content: topic },
       ],
       temperature: 0.3,
+      // 流式输出：让 AI 边生成边推数据，避免 Netlify 网关 30s Inactivity Timeout
+      // （非流式时函数等待 API 期间不发任何数据，网关 30s 看不到活动就 504）
+      stream: true,
     }
     if (supportsJsonMode) {
       requestBody.response_format = { type: "json_object" }
@@ -243,21 +245,63 @@ export default async (req: Request): Promise<Response> => {
       return jsonResponse({ error: `DeepSeek API 错误: ${errorText}` }, response.status, req)
     }
 
-    const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
-    const content = data.choices?.[0]?.message?.content
-
-    if (!content) {
-      return jsonResponse({ error: "API 返回内容为空" }, 500, req)
+    if (!response.body) {
+      return jsonResponse({ error: "API 返回空流" }, 500, req)
     }
 
-    let result: GeneratedResult
-    try {
-      result = JSON.parse(extractJson(content)) as GeneratedResult
-    } catch {
-      return jsonResponse({ error: "解析 JSON 失败", raw: content }, 500, req)
-    }
+    // 流式转发：解析上游 SSE（data: {json}），提取 delta.content，纯文本推给前端。
+    // 数据持续流动 → Netlify 网关不会因 30s 无活动而 504。
+    // 前端读取完整文本后再 JSON.parse（容错由前端 extractJson 处理）。
+    const upstreamReader = response.body.getReader()
+    const decoder = new TextDecoder()
+    const encoder = new TextEncoder()
+    let sseBuffer = ""
 
-    return jsonResponse(result, 200, req)
+    const stream = new ReadableStream({
+      async pull(controller) {
+        try {
+          const { done, value } = await upstreamReader.read()
+          if (done) {
+            controller.close()
+            return
+          }
+          sseBuffer += decoder.decode(value, { stream: true })
+          // SSE 按行切分，最后不完整的行留在 buffer
+          const lines = sseBuffer.split("\n")
+          sseBuffer = lines.pop() || ""
+          for (const line of lines) {
+            const trimmed = line.trim()
+            if (!trimmed.startsWith("data:")) continue
+            const payload = trimmed.slice(5).trim()
+            if (payload === "[DONE]") {
+              controller.close()
+              return
+            }
+            try {
+              const chunk = JSON.parse(payload) as { choices?: Array<{ delta?: { content?: string } }> }
+              const text = chunk.choices?.[0]?.delta?.content
+              if (text) controller.enqueue(encoder.encode(text))
+            } catch {
+              // 跳过无法解析的 SSE 行
+            }
+          }
+        } catch (err) {
+          controller.error(err)
+        }
+      },
+      cancel() {
+        upstreamReader.cancel().catch(() => {})
+      },
+    })
+
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        ...getCorsHeaders(req),
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache",
+      },
+    })
   } catch (error) {
     return jsonResponse({
       error: "服务器内部错误",

@@ -96,27 +96,6 @@ function buildSystemPrompt(topic: string): string {
   return SYSTEM_PROMPT_HEAD + findRelevantKnowledge(topic)
 }
 
-/**
- * 从模型输出里提取 JSON 字符串。
- * GLM 等不支持 json mode 的模型可能把 JSON 包在 ```json ... ``` 里，
- * 或前后带解释性文字。这里依次尝试：直接 parse → 去代码块 → 截取首尾大括号。
- */
-function extractJson(content: string): string {
-  const trimmed = content.trim()
-  try { JSON.parse(trimmed); return trimmed } catch { /* 继续兜底 */ }
-  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
-  if (fenceMatch) {
-    const inner = fenceMatch[1].trim()
-    try { JSON.parse(inner); return inner } catch { /* 继续兜底 */ }
-  }
-  const first = trimmed.indexOf('{')
-  const last = trimmed.lastIndexOf('}')
-  if (first !== -1 && last > first) {
-    return trimmed.slice(first, last + 1)
-  }
-  return trimmed
-}
-
 export function deepseekApiPlugin(apiKey: string): Plugin {
   // 本地开发同样支持通过环境变量切换 DeepSeek 官方 / 硅基流动
   const provider = (process.env.API_PROVIDER || 'deepseek').toLowerCase()
@@ -124,8 +103,9 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
   let modelName = 'deepseek-chat'
   if (provider === 'siliconflow' || provider === 'silicon') {
     apiBase = 'https://api.siliconflow.cn/v1'
-    // 默认 DeepSeek-V4-Flash（最快），GLM-4.5-Air 实测 28-31s 会触发 504
-    modelName = process.env.API_MODEL || 'deepseek-ai/DeepSeek-V4-Flash'
+    // 与生产端 generate.ts 保持一致：默认 GLM-4.5-Air（秒杀词质量好），
+    // 配合流式输出避免 504。本地可通过 API_MODEL 覆盖。
+    modelName = process.env.API_MODEL || 'zai-org/GLM-4.5-Air'
   }
   return {
     name: 'deepseek-api-plugin',
@@ -147,8 +127,11 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
           return
         }
 
+        // 与生产端 generate.ts 保持一致：以 text/plain 流式返回 AI 原始输出，
+        // 数据持续流动避免网关无活动超时；前端读取完整文本后再容错解析 JSON。
         res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Content-Type', 'application/json')
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.setHeader('Cache-Control', 'no-cache')
 
         let body = ''
         req.on('data', (chunk) => { body += chunk })
@@ -171,6 +154,8 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
                 { role: 'user', content: topic },
               ],
               temperature: 0.3,
+              // 流式输出：让 AI 边生成边推数据，避免长时间无活动触发网关超时
+              stream: true,
             }
             if (supportsJsonMode) {
               requestBody.response_format = { type: 'json_object' }
@@ -192,30 +177,66 @@ export function deepseekApiPlugin(apiKey: string): Plugin {
               return
             }
 
-            const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
-            const content = data.choices?.[0]?.message?.content
-
-            if (!content) {
+            if (!response.body) {
               res.statusCode = 500
-              res.end(JSON.stringify({ error: 'API 返回内容为空' }))
+              res.end(JSON.stringify({ error: 'API 返回空流' }))
               return
             }
 
-            // 解析 + 容错提取 JSON（GLM 不开 json mode 时可能带 ```json 包裹）
-            try {
-              const parsed = JSON.parse(extractJson(content))
-              res.statusCode = 200
-              res.end(JSON.stringify(parsed))
-            } catch {
-              res.statusCode = 500
-              res.end(JSON.stringify({ error: '解析 JSON 失败', raw: content }))
+            // 流式转发：解析上游 SSE（data: {json}），提取 delta.content，
+            // 纯文本 write 给前端。与生产端 ReadableStream 实现等价。
+            const upstreamReader = response.body.getReader()
+            const decoder = new TextDecoder()
+            let sseBuffer = ''
+
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+              const { done, value } = await upstreamReader.read()
+              if (done) break
+              sseBuffer += decoder.decode(value, { stream: true })
+              const lines = sseBuffer.split('\n')
+              sseBuffer = lines.pop() || ''
+              for (const line of lines) {
+                const trimmed = line.trim()
+                if (!trimmed.startsWith('data:')) continue
+                const payload = trimmed.slice(5).trim()
+                if (payload === '[DONE]') {
+                  res.end()
+                  return
+                }
+                try {
+                  const chunk = JSON.parse(payload) as { choices?: Array<{ delta?: { content?: string } }> }
+                  const text = chunk.choices?.[0]?.delta?.content
+                  if (text) res.write(text)
+                } catch {
+                  // 跳过无法解析的 SSE 行
+                }
+              }
             }
+            // flush decoder（多字节字符跨 chunk）
+            sseBuffer += decoder.decode()
+            // 处理缓冲区里剩余的行（非 [DONE] 结束的情况）
+            if (sseBuffer.trim().startsWith('data:')) {
+              const payload = sseBuffer.trim().slice(5).trim()
+              if (payload && payload !== '[DONE]') {
+                try {
+                  const chunk = JSON.parse(payload) as { choices?: Array<{ delta?: { content?: string } }> }
+                  const text = chunk.choices?.[0]?.delta?.content
+                  if (text) res.write(text)
+                } catch { /* 忽略 */ }
+              }
+            }
+            res.end()
           } catch (err) {
-            res.statusCode = 500
-            res.end(JSON.stringify({
-              error: '服务器内部错误',
-              message: err instanceof Error ? err.message : String(err),
-            }))
+            if (!res.headersSent) {
+              res.statusCode = 500
+              res.end(JSON.stringify({
+                error: '服务器内部错误',
+                message: err instanceof Error ? err.message : String(err),
+              }))
+            } else {
+              res.end()
+            }
           }
         })
       })
