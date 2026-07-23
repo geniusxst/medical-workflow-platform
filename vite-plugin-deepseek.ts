@@ -96,6 +96,27 @@ function buildSystemPrompt(topic: string): string {
   return SYSTEM_PROMPT_HEAD + findRelevantKnowledge(topic)
 }
 
+/**
+ * 从模型输出里提取 JSON 字符串。
+ * GLM 等不支持 json mode 的模型可能把 JSON 包在 ```json ... ``` 里，
+ * 或前后带解释性文字。这里依次尝试：直接 parse → 去代码块 → 截取首尾大括号。
+ */
+function extractJson(content: string): string {
+  const trimmed = content.trim()
+  try { JSON.parse(trimmed); return trimmed } catch { /* 继续兜底 */ }
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  if (fenceMatch) {
+    const inner = fenceMatch[1].trim()
+    try { JSON.parse(inner); return inner } catch { /* 继续兜底 */ }
+  }
+  const first = trimmed.indexOf('{')
+  const last = trimmed.lastIndexOf('}')
+  if (first !== -1 && last > first) {
+    return trimmed.slice(first, last + 1)
+  }
+  return trimmed
+}
+
 export function deepseekApiPlugin(apiKey: string): Plugin {
   // 本地开发同样支持通过环境变量切换 DeepSeek 官方 / 硅基流动
   const provider = (process.env.API_PROVIDER || 'deepseek').toLowerCase()
